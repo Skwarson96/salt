@@ -29,6 +29,9 @@ class DisplayUtils:
     def __convert_ann_to_mask(self, ann, height, width):
         mask = np.zeros((height, width), dtype=np.uint8)
         poly = ann["segmentation"]
+        for i in range(len(poly)):
+            if len(poly[i]) == 4:
+                poly[i] += poly[i][-2:]
         rles = coco_mask.frPyObjects(poly, height, width)
         rle = coco_mask.merge(rles)
         mask_instance = coco_mask.decode(rle)
