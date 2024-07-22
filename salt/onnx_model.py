@@ -37,10 +37,12 @@ class OnnxModels:
         image,
         image_embedding,
         input_point,
+        input_box,
         input_label,
-        input_box=None,
+        # input_box=None,
         onnx_mask_input=None,
     ):
+        print(f'input_point: {input_point}, input_box: {input_box}')
         if input_box is None:
             onnx_coord = np.concatenate([input_point, np.array([[0.0, 0.0]])], axis=0)[
                 None, :, :
@@ -49,9 +51,11 @@ class OnnxModels:
                 None, :
             ].astype(np.float32)
         else:
+            print(f'input_box1: {input_box}')
             onnx_box_coords = input_box.reshape(2, 2)
             onnx_box_labels = np.array([2, 3])
-            onnx_coord = np.concatenate([input_point, onnx_box_coords], axis=0)[
+            print(f'onnx_box_coords: {onnx_box_coords}')
+            onnx_coord = np.concatenate([np.array([[(input_box[0][0]+input_box[0][2])/2, (input_box[0][1]+input_box[0][3])/2]]), onnx_box_coords], axis=0)[
                 None, :, :
             ]
             onnx_label = np.concatenate([input_label, onnx_box_labels], axis=0)[
@@ -79,24 +83,33 @@ class OnnxModels:
         image,
         image_embedding,
         input_point,
+        input_box,
         input_label,
-        selected_box=None,
+        # selected_box=None,
         low_res_logits=None,
     ):
         onnx_mask_input = None
-        input_box = None
+        # input_box = None
         if low_res_logits is not None:
             onnx_mask_input = low_res_logits
-        if input_box is not None:
-            input_box = selected_box
+        # if input_box is not None:
+        #     input_box = selected_box
         ort_inputs = self.__translate_input(
             image,
             image_embedding,
             input_point,
+            input_box,
             input_label,
-            input_box=input_box,
+            # input_box=input_box,
             onnx_mask_input=onnx_mask_input,
         )
+
+        print(f'ort_inputs:: {ort_inputs}')
+
         masks, _, low_res_logits = self.ort_session.run(None, ort_inputs)
+
+        print(f'low_res_logits:: {low_res_logits}')
+
+
         masks = masks > self.threshold
         return masks, low_res_logits

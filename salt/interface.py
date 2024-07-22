@@ -96,7 +96,11 @@ class CustomGraphicsView(QGraphicsView):
             elif event.button() == Qt.RightButton:
                 label = 0
             if label is not None:
-                self.editor.add_click([int(x), int(y)], label, selected_annotations)
+                print(f'self.editor.prompt_type: {self.editor.prompt_type}')
+                if self.editor.prompt_type == "point":
+                    self.editor.add_click([int(x), int(y)], label, selected_annotations)
+                if self.editor.prompt_type == "box":
+                    self.editor.add_box([int(x), int(y), int(x)+100, int(y)+100], label, selected_annotations)
         self.imshow(self.editor.display)
 
 
@@ -172,6 +176,10 @@ class ApplicationInterface(QWidget):
     def save_all(self):
         self.editor.save()
 
+    def change_prompt_type(self):
+        print('change_prompt_type')
+        self.editor.change_prompt_type()
+
     def get_top_bar(self):
         top_bar = QWidget()
         button_layout = QHBoxLayout(top_bar)
@@ -185,6 +193,7 @@ class ApplicationInterface(QWidget):
             ("Transparency Up", lambda: self.transparency_up()),
             ("Transparency Down", lambda: self.transparency_down()),
             ("Save", lambda: self.save_all()),
+            ("Change prompt type", lambda: self.change_prompt_type()),
             (
                 "Remove Selected Annotations",
                 lambda: self.delete_annotations(),
