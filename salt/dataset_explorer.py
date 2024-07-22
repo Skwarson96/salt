@@ -88,7 +88,13 @@ def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, poly=False):
     if poly == True:
         for contour in contours:
             sc = simplify_coords_vwp(contour[:,0,:], 2).ravel().tolist()
-            annotation["segmentation"].append(sc)
+            tol = 1e-3
+            cleaned = []
+            for x, y in zip(sc[::2], sc[1::2]):
+                if x > tol and y > tol:
+                    cleaned.append(x)
+                    cleaned.append(y)
+            annotation["segmentation"].append(cleaned)
     return annotation
 
 
