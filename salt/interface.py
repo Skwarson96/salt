@@ -54,7 +54,7 @@ class CustomGraphicsView(QGraphicsView):
         self.end_point = QPoint()
         self.drawing = False
         self.display_image = None
-        self.display_image2 = None
+        self.curr_image = None
         # self.image = None
 
     def set_image(self, q_img):
@@ -65,6 +65,7 @@ class CustomGraphicsView(QGraphicsView):
         else:
             self.display_image = self.scene.addPixmap(pixmap)
             self.setSceneRect(QRectF(pixmap.rect()))
+        # self.curr_image = self.editor.image.copy()
 
     def wheelEvent(self, event: QWheelEvent):
         modifiers = QApplication.keyboardModifiers()
@@ -115,21 +116,21 @@ class CustomGraphicsView(QGraphicsView):
     def mouseMoveEvent(self, event):
         if self.drawing:
             self.end_point = event.pos()
-            display_image = self.editor.display.copy()
-            cv2.rectangle(display_image, (self.start_point.x(), self.start_point.y()), (self.end_point.x(), self.end_point.y()), (0, 255, 0), 2)
-            self.imshow(self.editor.display)
+            temp_image = self.editor.display.copy()
+            cv2.rectangle(temp_image, (self.start_point.x(), self.start_point.y()), (self.end_point.x(), self.end_point.y()), (0, 255, 0), 2)
+            self.imshow(temp_image)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             if self.editor.prompt_type == "box":
                 self.drawing = False
                 self.end_point = event.pos()
-                display_image = self.editor.display.copy()
-                cv2.rectangle(display_image, (self.start_point.x(), self.start_point.y()),
+                # display_image = self.editor..copy()
+                cv2.rectangle(self.editor.display, (self.start_point.x(), self.start_point.y()),
                               (self.end_point.x(), self.end_point.y()), (0, 255, 0), 2)
                 self.imshow(self.editor.display)
                 label = 1
-                self.editor.add_box(
+                self.editor.add_click(
                     [self.start_point.x(), self.start_point.y(), self.end_point.x(), self.end_point.y()], label,
                     selected_annotations)
 

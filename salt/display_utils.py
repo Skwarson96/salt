@@ -75,18 +75,18 @@ class DisplayUtils:
             image = cv2.circle(image, tuple(point), radius, color, -1)
         return image
 
-    def draw_box(
-        self, image, box, labels, colors={1: (0, 255, 0), 0: (0, 0, 255)}, radius=5
-    ):
-        # for i in range(box.shape[0]):
-        print(f'box1: {box}')
-        box = box[0]
-        # label = labels[i]
-        print(f'box2: {box}')
-        color = colors[0]
-
-        image = cv2.rectangle(image, (box[0], box[1]), (box[0]+100, box[1]+100), color, -1)
-
-
-
-        return image
+    # def draw_box(
+    #     self, image, box, labels, colors={1: (0, 255, 0), 0: (0, 0, 255)}, radius=5
+    # ):
+    #     # for i in range(box.shape[0]):
+    #     print(f'box1: {box}')
+    #     box = box[0]
+    #     # label = labels[i]
+    #     print(f'box2: {box}')
+    #     color = (100, 90, 220)# colors[1]
+    #
+    #     image = cv2.rectangle(image, (box[0], box[1]), (box[2], box[3]), color, 10)
+    #
+    #
+    #
+    #     return image

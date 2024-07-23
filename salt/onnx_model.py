@@ -43,7 +43,7 @@ class OnnxModels:
         onnx_mask_input=None,
     ):
         print(f'input_point: {input_point}, input_box: {input_box}')
-        if input_box is None:
+        if len(input_box) == 0:
             onnx_coord = np.concatenate([input_point, np.array([[0.0, 0.0]])], axis=0)[
                 None, :, :
             ]
@@ -52,6 +52,14 @@ class OnnxModels:
             ].astype(np.float32)
         else:
             print(f'input_box1: {input_box}')
+            input_box_copy = input_box.copy()
+            input_box_copy[0][0] = np.min([input_box[0][0], input_box[0][2]])
+            input_box_copy[0][2] = np.max([input_box[0][0], input_box[0][2]])
+            input_box_copy[0][1] = np.min([input_box[0][1], input_box[0][3]])
+            input_box_copy[0][3] = np.max([input_box[0][1], input_box[0][3]])
+            input_box = input_box_copy
+
+            print(f'input_box2: {input_box}')
             onnx_box_coords = input_box.reshape(2, 2)
             onnx_box_labels = np.array([2, 3])
             print(f'onnx_box_coords: {onnx_box_coords}')
