@@ -84,5 +84,9 @@ class DisplayUtils:
         # label = labels[i]
         print(f'box2: {box}')
         color = colors[0]
+
         image = cv2.rectangle(image, (box[0], box[1]), (box[0]+100, box[1]+100), color, -1)
+
+
+
         return image

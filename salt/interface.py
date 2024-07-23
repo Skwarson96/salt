@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QAbstractItemView,
 )
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QWheelEvent, QMouseEvent
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt, QRectF, QPoint
 from PyQt5.QtWidgets import (
     QPushButton,
     QVBoxLayout,
@@ -48,15 +48,22 @@ class CustomGraphicsView(QGraphicsView):
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
 
-        self.image_item = None
+        # self.image_item = None
+
+        self.start_point = QPoint()
+        self.end_point = QPoint()
+        self.drawing = False
+        self.display_image = None
+        self.display_image2 = None
+        # self.image = None
 
     def set_image(self, q_img):
         pixmap = QPixmap.fromImage(q_img)
-        if self.image_item:
-            self.image_item.setPixmap(pixmap)
+        if self.display_image:
+            self.display_image.setPixmap(pixmap)
             self.setSceneRect(QRectF(pixmap.rect()))
         else:
-            self.image_item = self.scene.addPixmap(pixmap)
+            self.display_image = self.scene.addPixmap(pixmap)
             self.setSceneRect(QRectF(pixmap.rect()))
 
     def wheelEvent(self, event: QWheelEvent):
@@ -89,19 +96,42 @@ class CustomGraphicsView(QGraphicsView):
             # self.editor.remove_click([int(x), int(y)])
         else:
             pos = event.pos()
-            pos_in_item = self.mapToScene(pos) - self.image_item.pos()
+            pos_in_item = self.mapToScene(pos) - self.display_image.pos()
             x, y = pos_in_item.x(), pos_in_item.y()
             if event.button() == Qt.LeftButton:
                 label = 1
+                if self.editor.prompt_type == "box":
+                    self.drawing = True
+                    self.start_point = event.pos()
+                    self.end_point = event.pos()
             elif event.button() == Qt.RightButton:
                 label = 0
             if label is not None:
                 print(f'self.editor.prompt_type: {self.editor.prompt_type}')
                 if self.editor.prompt_type == "point":
                     self.editor.add_click([int(x), int(y)], label, selected_annotations)
-                if self.editor.prompt_type == "box":
-                    self.editor.add_box([int(x), int(y), int(x)+100, int(y)+100], label, selected_annotations)
         self.imshow(self.editor.display)
+
+    def mouseMoveEvent(self, event):
+        if self.drawing:
+            self.end_point = event.pos()
+            display_image = self.editor.display.copy()
+            cv2.rectangle(display_image, (self.start_point.x(), self.start_point.y()), (self.end_point.x(), self.end_point.y()), (0, 255, 0), 2)
+            self.imshow(self.editor.display)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            if self.editor.prompt_type == "box":
+                self.drawing = False
+                self.end_point = event.pos()
+                display_image = self.editor.display.copy()
+                cv2.rectangle(display_image, (self.start_point.x(), self.start_point.y()),
+                              (self.end_point.x(), self.end_point.y()), (0, 255, 0), 2)
+                self.imshow(self.editor.display)
+                label = 1
+                self.editor.add_box(
+                    [self.start_point.x(), self.start_point.y(), self.end_point.x(), self.end_point.y()], label,
+                    selected_annotations)
 
 
 class ApplicationInterface(QWidget):

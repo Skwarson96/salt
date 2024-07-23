@@ -104,11 +104,11 @@ class OnnxModels:
             onnx_mask_input=onnx_mask_input,
         )
 
-        print(f'ort_inputs:: {ort_inputs}')
+        # print(f'ort_inputs:: {ort_inputs}')
 
         masks, _, low_res_logits = self.ort_session.run(None, ort_inputs)
 
-        print(f'low_res_logits:: {low_res_logits}')
+        # print(f'low_res_logits:: {low_res_logits}')
 
 
         masks = masks > self.threshold
