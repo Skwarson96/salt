@@ -55,7 +55,7 @@ class CustomGraphicsView(QGraphicsView):
         self.drawing = False
         self.display_image = None
         self.curr_image = None
-        # self.image = None
+        self.is_box_added = True
 
     def set_image(self, q_img):
         pixmap = QPixmap.fromImage(q_img)
@@ -101,10 +101,12 @@ class CustomGraphicsView(QGraphicsView):
             x, y = pos_in_item.x(), pos_in_item.y()
             if event.button() == Qt.LeftButton:
                 label = 1
-                if self.editor.prompt_type == "box":
+                if self.editor.prompt_type == "box" and self.is_box_added:
+                    print('=================test==================')
                     self.drawing = True
                     self.start_point = event.pos()
                     self.end_point = event.pos()
+                    self.is_box_added = False
             elif event.button() == Qt.RightButton:
                 label = 0
             if label is not None:
@@ -122,17 +124,16 @@ class CustomGraphicsView(QGraphicsView):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
-            if self.editor.prompt_type == "box":
+            if self.editor.prompt_type == "box" and self.drawing:
                 self.drawing = False
                 self.end_point = event.pos()
-                # display_image = self.editor..copy()
                 cv2.rectangle(self.editor.display, (self.start_point.x(), self.start_point.y()),
                               (self.end_point.x(), self.end_point.y()), (0, 255, 0), 2)
-                self.imshow(self.editor.display)
                 label = 1
                 self.editor.add_click(
                     [self.start_point.x(), self.start_point.y(), self.end_point.x(), self.end_point.y()], label,
                     selected_annotations)
+                self.imshow(self.editor.display)
 
 
 class ApplicationInterface(QWidget):
@@ -170,12 +171,14 @@ class ApplicationInterface(QWidget):
     def reset(self):
         global selected_annotations
         self.editor.reset(selected_annotations)
+        self.graphics_view.is_box_added = True
         self.graphics_view.imshow(self.editor.display)
 
     def add(self):
         global selected_annotations
         self.editor.save_ann()
         self.editor.reset(selected_annotations)
+        self.graphics_view.is_box_added = True
         self.graphics_view.imshow(self.editor.display)
 
     def next_image(self):

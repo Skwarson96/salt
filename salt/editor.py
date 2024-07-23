@@ -132,9 +132,10 @@ class Editor:
             self.curr_inputs.input_label,
             low_res_logits=self.curr_inputs.low_res_logits,
         )
-        self.curr_inputs.set_mask(masks[0, 0, :, :])
-        self.curr_inputs.set_low_res_logits(low_res_logits)
-        self.__draw(selected_annotations)
+        if masks is not None and low_res_logits is not None:
+            self.curr_inputs.set_mask(masks[0, 0, :, :])
+            self.curr_inputs.set_low_res_logits(low_res_logits)
+            self.__draw(selected_annotations)
 
     # def add_box(self, new_box, new_label, selected_annotations=[]):
     #     self.curr_inputs.add_input_box(new_box, new_label)
