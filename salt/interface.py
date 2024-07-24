@@ -107,7 +107,6 @@ class CustomGraphicsView(QGraphicsView):
             elif event.button() == Qt.RightButton:
                 label = 0
             if label is not None:
-                print(f"Prompt type: {self.editor.prompt_type}")
                 if self.editor.prompt_type == "point":
                     self.editor.add_click([int(x), int(y)], label, selected_annotations)
         self.imshow(self.editor.display)
@@ -226,7 +225,6 @@ class ApplicationInterface(QWidget):
         self.editor.save()
 
     def change_prompt_type(self):
-        print("change_prompt_type")
         self.editor.change_prompt_type()
 
     def get_top_bar(self):

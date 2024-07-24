@@ -15,7 +15,6 @@ class OnnxModels:
         self, onnx_models_path, threshold=0.5, image_width=1920, image_height=1080
     ):
         self.onnx_models_path = onnx_models_path
-        print(self.onnx_models_path)
         self.threshold = threshold
         self.set_image_resolution(image_width, image_height)
 
@@ -117,7 +116,6 @@ class OnnxModels:
             onnx_mask_input=onnx_mask_input,
         )
 
-        print(f"ort_inputs:: {ort_inputs}")
         if ort_inputs is not None:
             masks, _, low_res_logits = self.ort_session.run(None, ort_inputs)
             masks = masks > self.threshold

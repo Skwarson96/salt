@@ -161,7 +161,7 @@ class Editor:
             self.prompt_type = "box"
         else:
             self.prompt_type = "point"
-        print(f"self.prompt_type: {self.prompt_type}")
+        print(f"Prompt type: {self.prompt_type}")
 
     def next_image(self):
         if self.image_id == self.dataset_explorer.get_num_images() - 1:
