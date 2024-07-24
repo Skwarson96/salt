@@ -29,13 +29,28 @@ class DisplayUtils:
     def __convert_ann_to_mask(self, ann, height, width):
         mask = np.zeros((height, width), dtype=np.uint8)
         poly = ann["segmentation"]
-        rles = coco_mask.frPyObjects(poly, height, width)
+        for i in range(len(poly)):
+            if len(poly[i]) == 4:
+                poly[i] += poly[i][-2:]
+
+        normalized_polygons = self.normalize_poly_format(poly)
+
+        rles = coco_mask.frPyObjects(normalized_polygons, height, width)
         rle = coco_mask.merge(rles)
         mask_instance = coco_mask.decode(rle)
         mask_instance = np.logical_not(mask_instance)
         mask = np.logical_or(mask, mask_instance)
         mask = np.logical_not(mask)
         return mask
+
+    def normalize_poly_format(self, polygons):
+        normalized_polygons = []
+        for poly in polygons:
+            if isinstance(poly, list):
+                if len(poly) % 2 == 0:
+                    for i in range(0, len(poly), 2):
+                        normalized_polygons.extend([poly[i], poly[i + 1]])
+        return [normalized_polygons]
 
     def draw_box_on_image(self, image, ann, color):
         x, y, w, h = ann["bbox"]

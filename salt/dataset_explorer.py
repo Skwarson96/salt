@@ -70,7 +70,9 @@ def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, poly=False):
         fortran_binary_mask = np.asfortranarray(image_mask)
         encoded_mask = mask.encode(fortran_binary_mask)
     if poly == True:
-        contours, _ = cv2.findContours(image_mask.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(
+            image_mask.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE
+        )
     annotation = {
         "id": start_anno_id,
         "image_id": image_id,
@@ -87,8 +89,14 @@ def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, poly=False):
         )
     if poly == True:
         for contour in contours:
-            sc = simplify_coords_vwp(contour[:,0,:], 2).ravel().tolist()
-            annotation["segmentation"].append(sc)
+            sc = simplify_coords_vwp(contour[:, 0, :], 2).ravel().tolist()
+            tol = 1e-3
+            cleaned = []
+            for x, y in zip(sc[::2], sc[1::2]):
+                if x > tol and y > tol:
+                    cleaned.append(x)
+                    cleaned.append(y)
+            annotation["segmentation"].append(cleaned)
     return annotation
 
 
@@ -179,9 +187,7 @@ class DatasetExplorer:
 
     def delete_annotations(self, image_id, annotation_id):
         for annotation in self.coco_json["annotations"]:
-            if (
-                annotation["image_id"] == image_id and annotation["id"] == annotation_id
-            ):  # and annotation["id"] in annotation_ids:
+            if annotation["image_id"] == image_id and annotation["id"] == annotation_id:
                 self.coco_json["annotations"].remove(annotation)
                 break
         for annotation in self.annotations_by_image_id[image_id]:

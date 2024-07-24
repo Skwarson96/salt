@@ -8,12 +8,14 @@ from salt.display_utils import DisplayUtils
 class CurrentCapturedInputs:
     def __init__(self):
         self.input_point = np.array([])
+        self.input_box = np.array([])
         self.input_label = np.array([])
         self.low_res_logits = None
         self.curr_mask = None
 
     def reset_inputs(self):
         self.input_point = np.array([])
+        self.input_box = np.array([])
         self.input_label = np.array([])
         self.low_res_logits = None
         self.curr_mask = None
@@ -21,12 +23,17 @@ class CurrentCapturedInputs:
     def set_mask(self, mask):
         self.curr_mask = mask
 
-    def add_input_click(self, input_point, input_label):
-        if len(self.input_point) == 0:
-            self.input_point = np.array([input_point])
-        else:
-            self.input_point = np.vstack([self.input_point, np.array([input_point])])
-        self.input_label = np.append(self.input_label, input_label)
+    def add_input_click(self, input_data, input_label, prompt_type):
+        # self.input_box = None
+        if prompt_type == "point":
+            if len(self.input_point) == 0:
+                self.input_point = np.array([input_data])
+            else:
+                self.input_point = np.vstack([self.input_point, np.array([input_data])])
+            self.input_label = np.append(self.input_label, input_label)
+        if prompt_type == "box":
+            self.input_box = np.array([input_data])
+            self.input_label = np.append(self.input_label, input_label)
 
     def set_low_res_logits(self, low_res_logits):
         self.low_res_logits = low_res_logits
@@ -65,6 +72,7 @@ class Editor:
         )
         self.du = DisplayUtils()
         self.reset()
+        self.prompt_type = "point"
 
     def list_annotations(self):
         anns, colors = self.dataset_explorer.get_annotations(
@@ -89,9 +97,12 @@ class Editor:
     def __draw(self, selected_annotations=[]):
         self.display = self.image_bgr.copy()
         if self.curr_inputs.curr_mask is not None:
-            self.display = self.du.draw_points(
-                self.display, self.curr_inputs.input_point, self.curr_inputs.input_label
-            )
+            if self.prompt_type == "point":
+                self.display = self.du.draw_points(
+                    self.display,
+                    self.curr_inputs.input_point,
+                    self.curr_inputs.input_label,
+                )
             self.display = self.du.overlay_mask_on_image(
                 self.display, self.curr_inputs.curr_mask
             )
@@ -99,17 +110,19 @@ class Editor:
             self.__draw_known_annotations(selected_annotations)
 
     def add_click(self, new_pt, new_label, selected_annotations=[]):
-        self.curr_inputs.add_input_click(new_pt, new_label)
+        self.curr_inputs.add_input_click(new_pt, new_label, self.prompt_type)
         masks, low_res_logits = self.onnx_helper.call(
             self.image,
             self.image_embedding,
             self.curr_inputs.input_point,
+            self.curr_inputs.input_box,
             self.curr_inputs.input_label,
             low_res_logits=self.curr_inputs.low_res_logits,
         )
-        self.curr_inputs.set_mask(masks[0, 0, :, :])
-        self.curr_inputs.set_low_res_logits(low_res_logits)
-        self.__draw(selected_annotations)
+        if masks is not None and low_res_logits is not None:
+            self.curr_inputs.set_mask(masks[0, 0, :, :])
+            self.curr_inputs.set_low_res_logits(low_res_logits)
+            self.__draw(selected_annotations)
 
     def remove_click(self, new_pt):
         print("ran remove click")
@@ -142,6 +155,13 @@ class Editor:
 
     def save(self):
         self.dataset_explorer.save_annotation()
+
+    def change_prompt_type(self):
+        if self.prompt_type == "point":
+            self.prompt_type = "box"
+        else:
+            self.prompt_type = "point"
+        print(f"Prompt type: {self.prompt_type}")
 
     def next_image(self):
         if self.image_id == self.dataset_explorer.get_num_images() - 1:

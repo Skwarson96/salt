@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import (
     QAbstractItemView,
 )
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QWheelEvent, QMouseEvent
-from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtCore import Qt, QRectF, QPoint
 from PyQt5.QtWidgets import (
     QPushButton,
     QVBoxLayout,
@@ -48,16 +48,22 @@ class CustomGraphicsView(QGraphicsView):
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
 
-        self.image_item = None
+        self.start_point = QPoint()
+        self.end_point = QPoint()
+        self.drawing = False
+        self.display_image = None
+        self.curr_image = None
+        self.is_box_added = True
 
     def set_image(self, q_img):
         pixmap = QPixmap.fromImage(q_img)
-        if self.image_item:
-            self.image_item.setPixmap(pixmap)
+        if self.display_image:
+            self.display_image.setPixmap(pixmap)
             self.setSceneRect(QRectF(pixmap.rect()))
         else:
-            self.image_item = self.scene.addPixmap(pixmap)
+            self.display_image = self.scene.addPixmap(pixmap)
             self.setSceneRect(QRectF(pixmap.rect()))
+        # self.curr_image = self.editor.image.copy()
 
     def wheelEvent(self, event: QWheelEvent):
         modifiers = QApplication.keyboardModifiers()
@@ -89,15 +95,59 @@ class CustomGraphicsView(QGraphicsView):
             # self.editor.remove_click([int(x), int(y)])
         else:
             pos = event.pos()
-            pos_in_item = self.mapToScene(pos) - self.image_item.pos()
+            pos_in_item = self.mapToScene(pos) - self.display_image.pos()
             x, y = pos_in_item.x(), pos_in_item.y()
             if event.button() == Qt.LeftButton:
                 label = 1
+                if self.editor.prompt_type == "box" and self.is_box_added:
+                    self.drawing = True
+                    self.start_point = event.pos()
+                    self.end_point = event.pos()
+                    self.is_box_added = False
             elif event.button() == Qt.RightButton:
                 label = 0
             if label is not None:
-                self.editor.add_click([int(x), int(y)], label, selected_annotations)
+                if self.editor.prompt_type == "point":
+                    self.editor.add_click([int(x), int(y)], label, selected_annotations)
         self.imshow(self.editor.display)
+
+    def mouseMoveEvent(self, event):
+        if self.drawing:
+            self.end_point = event.pos()
+            temp_image = self.editor.display.copy()
+            cv2.rectangle(
+                temp_image,
+                (self.start_point.x(), self.start_point.y()),
+                (self.end_point.x(), self.end_point.y()),
+                (0, 255, 0),
+                2,
+            )
+            self.imshow(temp_image)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            if self.editor.prompt_type == "box" and self.drawing:
+                self.drawing = False
+                self.end_point = event.pos()
+                cv2.rectangle(
+                    self.editor.display,
+                    (self.start_point.x(), self.start_point.y()),
+                    (self.end_point.x(), self.end_point.y()),
+                    (0, 255, 0),
+                    2,
+                )
+                label = 1
+                self.editor.add_click(
+                    [
+                        self.start_point.x(),
+                        self.start_point.y(),
+                        self.end_point.x(),
+                        self.end_point.y(),
+                    ],
+                    label,
+                    selected_annotations,
+                )
+                self.imshow(self.editor.display)
 
 
 class ApplicationInterface(QWidget):
@@ -135,12 +185,14 @@ class ApplicationInterface(QWidget):
     def reset(self):
         global selected_annotations
         self.editor.reset(selected_annotations)
+        self.graphics_view.is_box_added = True
         self.graphics_view.imshow(self.editor.display)
 
     def add(self):
         global selected_annotations
         self.editor.save_ann()
         self.editor.reset(selected_annotations)
+        self.graphics_view.is_box_added = True
         self.graphics_view.imshow(self.editor.display)
 
     def next_image(self):
@@ -172,6 +224,9 @@ class ApplicationInterface(QWidget):
     def save_all(self):
         self.editor.save()
 
+    def change_prompt_type(self):
+        self.editor.change_prompt_type()
+
     def get_top_bar(self):
         top_bar = QWidget()
         button_layout = QHBoxLayout(top_bar)
@@ -185,6 +240,7 @@ class ApplicationInterface(QWidget):
             ("Transparency Up", lambda: self.transparency_up()),
             ("Transparency Down", lambda: self.transparency_down()),
             ("Save", lambda: self.save_all()),
+            ("Change prompt type", lambda: self.change_prompt_type()),
             (
                 "Remove Selected Annotations",
                 lambda: self.delete_annotations(),
@@ -222,7 +278,6 @@ class ApplicationInterface(QWidget):
         anns, colors = self.editor.list_annotations()
         list_widget = self.panel_annotations
         list_widget.clear()
-        # anns, colors = self.editor.get_annotations(self.editor.image_id)
         categories = self.editor.get_categories(get_colors=False)
         for i, ann in enumerate(anns):
             listWidgetItem = QListWidgetItem(
