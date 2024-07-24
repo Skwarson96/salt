@@ -48,8 +48,6 @@ class CustomGraphicsView(QGraphicsView):
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
 
-        # self.image_item = None
-
         self.start_point = QPoint()
         self.end_point = QPoint()
         self.drawing = False
@@ -102,7 +100,6 @@ class CustomGraphicsView(QGraphicsView):
             if event.button() == Qt.LeftButton:
                 label = 1
                 if self.editor.prompt_type == "box" and self.is_box_added:
-                    print('=================test==================')
                     self.drawing = True
                     self.start_point = event.pos()
                     self.end_point = event.pos()
@@ -110,7 +107,7 @@ class CustomGraphicsView(QGraphicsView):
             elif event.button() == Qt.RightButton:
                 label = 0
             if label is not None:
-                print(f'self.editor.prompt_type: {self.editor.prompt_type}')
+                print(f"Prompt type: {self.editor.prompt_type}")
                 if self.editor.prompt_type == "point":
                     self.editor.add_click([int(x), int(y)], label, selected_annotations)
         self.imshow(self.editor.display)
@@ -119,7 +116,13 @@ class CustomGraphicsView(QGraphicsView):
         if self.drawing:
             self.end_point = event.pos()
             temp_image = self.editor.display.copy()
-            cv2.rectangle(temp_image, (self.start_point.x(), self.start_point.y()), (self.end_point.x(), self.end_point.y()), (0, 255, 0), 2)
+            cv2.rectangle(
+                temp_image,
+                (self.start_point.x(), self.start_point.y()),
+                (self.end_point.x(), self.end_point.y()),
+                (0, 255, 0),
+                2,
+            )
             self.imshow(temp_image)
 
     def mouseReleaseEvent(self, event):
@@ -127,12 +130,24 @@ class CustomGraphicsView(QGraphicsView):
             if self.editor.prompt_type == "box" and self.drawing:
                 self.drawing = False
                 self.end_point = event.pos()
-                cv2.rectangle(self.editor.display, (self.start_point.x(), self.start_point.y()),
-                              (self.end_point.x(), self.end_point.y()), (0, 255, 0), 2)
+                cv2.rectangle(
+                    self.editor.display,
+                    (self.start_point.x(), self.start_point.y()),
+                    (self.end_point.x(), self.end_point.y()),
+                    (0, 255, 0),
+                    2,
+                )
                 label = 1
                 self.editor.add_click(
-                    [self.start_point.x(), self.start_point.y(), self.end_point.x(), self.end_point.y()], label,
-                    selected_annotations)
+                    [
+                        self.start_point.x(),
+                        self.start_point.y(),
+                        self.end_point.x(),
+                        self.end_point.y(),
+                    ],
+                    label,
+                    selected_annotations,
+                )
                 self.imshow(self.editor.display)
 
 
@@ -211,7 +226,7 @@ class ApplicationInterface(QWidget):
         self.editor.save()
 
     def change_prompt_type(self):
-        print('change_prompt_type')
+        print("change_prompt_type")
         self.editor.change_prompt_type()
 
     def get_top_bar(self):
@@ -265,7 +280,6 @@ class ApplicationInterface(QWidget):
         anns, colors = self.editor.list_annotations()
         list_widget = self.panel_annotations
         list_widget.clear()
-        # anns, colors = self.editor.get_annotations(self.editor.image_id)
         categories = self.editor.get_categories(get_colors=False)
         for i, ann in enumerate(anns):
             listWidgetItem = QListWidgetItem(

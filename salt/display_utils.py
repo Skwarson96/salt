@@ -46,10 +46,8 @@ class DisplayUtils:
     def normalize_poly_format(self, polygons):
         normalized_polygons = []
         for poly in polygons:
-
             if isinstance(poly, list):
                 if len(poly) % 2 == 0:
-
                     for i in range(0, len(poly), 2):
                         normalized_polygons.extend([poly[i], poly[i + 1]])
         return [normalized_polygons]
@@ -88,19 +86,3 @@ class DisplayUtils:
             color = colors[label]
             image = cv2.circle(image, tuple(point), radius, color, -1)
         return image
-
-    # def draw_box(
-    #     self, image, box, labels, colors={1: (0, 255, 0), 0: (0, 0, 255)}, radius=5
-    # ):
-    #     # for i in range(box.shape[0]):
-    #     print(f'box1: {box}')
-    #     box = box[0]
-    #     # label = labels[i]
-    #     print(f'box2: {box}')
-    #     color = (100, 90, 220)# colors[1]
-    #
-    #     image = cv2.rectangle(image, (box[0], box[1]), (box[2], box[3]), color, 10)
-    #
-    #
-    #
-    #     return image

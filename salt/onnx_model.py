@@ -39,12 +39,9 @@ class OnnxModels:
         input_point,
         input_box,
         input_label,
-        # input_box=None,
         onnx_mask_input=None,
     ):
-        print(f'input_point: {input_point}, input_box: {input_box}')
         if len(input_box) == 0:
-            print(f'input_label point:: {input_label}')
             onnx_coord = np.concatenate([input_point, np.array([[0.0, 0.0]])], axis=0)[
                 None, :, :
             ]
@@ -53,7 +50,6 @@ class OnnxModels:
             ].astype(np.float32)
         else:
             if len(input_label) == 1:
-                print(f'input_box1: {input_box}')
                 input_box_copy = input_box.copy()
                 input_box_copy[0][0] = np.min([input_box[0][0], input_box[0][2]])
                 input_box_copy[0][2] = np.max([input_box[0][0], input_box[0][2]])
@@ -61,15 +57,22 @@ class OnnxModels:
                 input_box_copy[0][3] = np.max([input_box[0][1], input_box[0][3]])
                 input_box = input_box_copy
 
-                print(f'input_box2: {input_box}')
                 onnx_box_coords = input_box.reshape(2, 2)
                 onnx_box_labels = np.array([2, 3])
-                print(f'onnx_box_coords: {onnx_box_coords}')
-                print(f'onnx_box_labels:: {onnx_box_labels}')
-                print(f'input_label:: {input_label}')
-                onnx_coord = np.concatenate([np.array([[(input_box[0][0]+input_box[0][2])/2, (input_box[0][1]+input_box[0][3])/2]]), onnx_box_coords], axis=0)[
-                    None, :, :
-                ]
+                onnx_coord = np.concatenate(
+                    [
+                        np.array(
+                            [
+                                [
+                                    (input_box[0][0] + input_box[0][2]) / 2,
+                                    (input_box[0][1] + input_box[0][3]) / 2,
+                                ]
+                            ]
+                        ),
+                        onnx_box_coords,
+                    ],
+                    axis=0,
+                )[None, :, :]
                 onnx_label = np.concatenate([input_label, onnx_box_labels], axis=0)[
                     None, :
                 ].astype(np.float32)
@@ -98,32 +101,25 @@ class OnnxModels:
         input_point,
         input_box,
         input_label,
-        # selected_box=None,
         low_res_logits=None,
     ):
         onnx_mask_input = None
-        # input_box = None
+
         if low_res_logits is not None:
             onnx_mask_input = low_res_logits
-        # if input_box is not None:
-        #     input_box = selected_box
+
         ort_inputs = self.__translate_input(
             image,
             image_embedding,
             input_point,
             input_box,
             input_label,
-            # input_box=input_box,
             onnx_mask_input=onnx_mask_input,
         )
 
-        print(f'ort_inputs:: {ort_inputs}')
+        print(f"ort_inputs:: {ort_inputs}")
         if ort_inputs is not None:
             masks, _, low_res_logits = self.ort_session.run(None, ort_inputs)
-
-            print(f'low_res_logits:: {low_res_logits}')
-
-
             masks = masks > self.threshold
             return masks, low_res_logits
         return None, None

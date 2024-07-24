@@ -25,25 +25,15 @@ class CurrentCapturedInputs:
 
     def add_input_click(self, input_data, input_label, prompt_type):
         # self.input_box = None
-        if prompt_type == 'point':
+        if prompt_type == "point":
             if len(self.input_point) == 0:
                 self.input_point = np.array([input_data])
             else:
                 self.input_point = np.vstack([self.input_point, np.array([input_data])])
             self.input_label = np.append(self.input_label, input_label)
-        if prompt_type == 'box':
+        if prompt_type == "box":
             self.input_box = np.array([input_data])
             self.input_label = np.append(self.input_label, input_label)
-
-    # def add_input_box(self, input_box, input_label):
-    #     self.input_point = None
-    #     if len(self.input_box) == 0:
-    #         self.input_box = np.array([input_box])
-    #         self.input_label = np.append(self.input_label, input_label)
-    #     else:
-    #         print("ERROR!!")
-    #         # self.input_point = np.vstack([self.input_point, np.array([input_point])])
-    #     # self.input_label = np.append(self.input_label, input_label)
 
     def set_low_res_logits(self, low_res_logits):
         self.low_res_logits = low_res_logits
@@ -51,7 +41,7 @@ class CurrentCapturedInputs:
 
 class Editor:
     def __init__(
-            self, onnx_models_path, dataset_path, categories=None, coco_json_path=None
+        self, onnx_models_path, dataset_path, categories=None, coco_json_path=None
     ):
         self.dataset_path = dataset_path
         self.coco_json_path = coco_json_path
@@ -83,7 +73,6 @@ class Editor:
         self.du = DisplayUtils()
         self.reset()
         self.prompt_type = "point"
-        print("TEST ININT EDITOR")
 
     def list_annotations(self):
         anns, colors = self.dataset_explorer.get_annotations(
@@ -108,14 +97,12 @@ class Editor:
     def __draw(self, selected_annotations=[]):
         self.display = self.image_bgr.copy()
         if self.curr_inputs.curr_mask is not None:
-            if self.prompt_type == 'point':
+            if self.prompt_type == "point":
                 self.display = self.du.draw_points(
-                    self.display, self.curr_inputs.input_point, self.curr_inputs.input_label
+                    self.display,
+                    self.curr_inputs.input_point,
+                    self.curr_inputs.input_label,
                 )
-            # if self.prompt_type == 'box':
-            #     self.display = self.du.draw_box(
-            #         self.display, self.curr_inputs.input_box, self.curr_inputs.input_label
-            #     )
             self.display = self.du.overlay_mask_on_image(
                 self.display, self.curr_inputs.curr_mask
             )
@@ -136,20 +123,6 @@ class Editor:
             self.curr_inputs.set_mask(masks[0, 0, :, :])
             self.curr_inputs.set_low_res_logits(low_res_logits)
             self.__draw(selected_annotations)
-
-    # def add_box(self, new_box, new_label, selected_annotations=[]):
-    #     self.curr_inputs.add_input_box(new_box, new_label)
-    #     masks, low_res_logits = self.onnx_helper.call(
-    #         self.image,
-    #         self.image_embedding,
-    #         self.curr_inputs.input_point,
-    #         self.curr_inputs.input_box,
-    #         self.curr_inputs.input_label,
-    #         low_res_logits=self.curr_inputs.low_res_logits,
-    #     )
-    #     self.curr_inputs.set_mask(masks[0, 0, :, :])
-    #     self.curr_inputs.set_low_res_logits(low_res_logits)
-    #     self.__draw(selected_annotations)
 
     def remove_click(self, new_pt):
         print("ran remove click")
@@ -188,7 +161,7 @@ class Editor:
             self.prompt_type = "box"
         else:
             self.prompt_type = "point"
-        print(f'self.prompt_type: {self.prompt_type}')
+        print(f"self.prompt_type: {self.prompt_type}")
 
     def next_image(self):
         if self.image_id == self.dataset_explorer.get_num_images() - 1:
