@@ -56,8 +56,8 @@ class Editor:
         self.categories, self.category_colors = self.dataset_explorer.get_categories(
             get_colors=True
         )
-        self.image_id = 0
-        self.category_id = 0
+        self.image_id = 1
+        self.category_id = 1
         self.show_other_anns = True
         (
             self.image,
@@ -164,7 +164,7 @@ class Editor:
         print(f"Prompt type: {self.prompt_type}")
 
     def next_image(self):
-        if self.image_id == self.dataset_explorer.get_num_images() - 1:
+        if self.image_id == self.dataset_explorer.get_num_images():
             return
         self.image_id += 1
         (
@@ -177,7 +177,7 @@ class Editor:
         self.reset()
 
     def prev_image(self):
-        if self.image_id == 0:
+        if self.image_id == 1:
             return
         self.image_id -= 1
         (
@@ -190,14 +190,14 @@ class Editor:
         self.reset()
 
     def next_category(self):
-        if self.category_id == len(self.categories) - 1:
-            self.category_id = 0
+        if self.category_id == len(self.categories):
+            self.category_id = 1
             return
         self.category_id += 1
 
     def prev_category(self):
-        if self.category_id == 0:
-            self.category_id = len(self.categories) - 1
+        if self.category_id == 1:
+            self.category_id = len(self.categories)
             return
         self.category_id -= 1
 
@@ -207,5 +207,5 @@ class Editor:
         return self.categories
 
     def select_category(self, category_name):
-        category_id = self.categories.index(category_name)
+        category_id = self.categories.index(category_name) + 1
         self.category_id = category_id

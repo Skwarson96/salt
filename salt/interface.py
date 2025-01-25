@@ -258,15 +258,18 @@ class ApplicationInterface(QWidget):
         panel_layout = QVBoxLayout(panel)
         categories, colors = self.editor.get_categories(get_colors=True)
         label_array = []
-        for i, _ in enumerate(categories):
-            label_array.append(QRadioButton(categories[i]))
-            label_array[i].clicked.connect(
-                lambda state, x=categories[i]: self.editor.select_category(x)
+
+        for category_index, category in enumerate(categories):
+            label_array.append(QRadioButton(category))
+            label_array[category_index].clicked.connect(
+                lambda state, x=category: self.editor.select_category(x)
             )
-            label_array[i].setStyleSheet(
-                "background-color: rgba({},{},{},0.6)".format(*colors[i][::-1])
+
+            color = colors[category_index + 1]
+            label_array[category_index].setStyleSheet(
+                "background-color: rgba({},{},{},0.6)".format(*color[::-1])
             )
-            panel_layout.addWidget(label_array[i])
+            panel_layout.addWidget(label_array[category_index])
 
         scroll = QScrollArea()
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -281,7 +284,7 @@ class ApplicationInterface(QWidget):
         categories = self.editor.get_categories(get_colors=False)
         for i, ann in enumerate(anns):
             listWidgetItem = QListWidgetItem(
-                str(ann["id"]) + " - " + (categories[ann["category_id"]])
+                str(ann["id"]) + " - " + (categories[ann["category_id"]-1])
             )
             list_widget.addItem(listWidgetItem)
         return list_widget

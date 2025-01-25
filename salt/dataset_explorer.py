@@ -7,7 +7,7 @@ import numpy as np
 from simplification.cutil import simplify_coords_vwp
 import os, cv2, copy
 from distinctipy import distinctipy
-
+from datetime import datetime
 
 def init_coco(dataset_folder, image_names, categories, coco_json_path):
     coco_json = {
@@ -15,23 +15,25 @@ def init_coco(dataset_folder, image_names, categories, coco_json_path):
             "description": "SAM Dataset",
             "url": "",
             "version": "1.0",
-            "year": 2023,
             "contributor": "Sam",
-            "date_created": "2021/07/01",
+            "date_created": datetime.today().strftime('%Y-%m-%d'),
         },
         "images": [],
         "annotations": [],
         "categories": [],
     }
-    for i, category in enumerate(categories):
+    for category_index, category in enumerate(categories):
+        category_index += 1
         coco_json["categories"].append(
-            {"id": i, "name": category, "supercategory": category}
+            {"id": category_index, "name": category, "supercategory": category}
         )
-    for i, image_name in enumerate(image_names):
-        im = cv2.imread(os.path.join(dataset_folder, image_name))
+    for image_index, image_path in enumerate(image_names):
+        image_index += 1
+        im = cv2.imread(os.path.join(dataset_folder, image_path))
+        image_name = os.path.basename(image_path)
         coco_json["images"].append(
             {
-                "id": i,
+                "id": image_index,
                 "file_name": image_name,
                 "width": im.shape[1],
                 "height": im.shape[0],
@@ -125,17 +127,17 @@ class DatasetExplorer:
                 self.annotations_by_image_id[image_id] = []
             self.annotations_by_image_id[image_id].append(annotation)
 
-        # self.global_annotation_id = len(self.coco_json["annotations"])
         try:
             self.global_annotation_id = (
                 max(self.coco_json["annotations"], key=lambda x: x["id"])["id"] + 1
             )
         except:
-            self.global_annotation_id = 0
-        self.category_colors = distinctipy.get_colors(len(self.categories))
-        self.category_colors = [
-            tuple([int(255 * c) for c in color]) for color in self.category_colors
+            self.global_annotation_id = 1
+        category_colors = distinctipy.get_colors(len(self.categories))
+        category_colors = [
+            tuple([int(255 * c) for c in color]) for color in category_colors
         ]
+        self.category_colors = {i + 1: value for i, value in enumerate(category_colors)}
 
     def __init_coco_json(self, categories):
         appended_image_names = [
@@ -157,8 +159,8 @@ class DatasetExplorer:
         return len(self.image_names)
 
     def get_image_data(self, image_id):
-        image_name = self.coco_json["images"][image_id]["file_name"]
-        image_path = os.path.join(self.dataset_folder, image_name)
+        image_name = self.coco_json["images"][image_id-1]["file_name"]
+        image_path = os.path.join(self.dataset_folder, os.path.join('images', image_name))
         embedding_path = os.path.join(
             self.dataset_folder,
             "embeddings",
