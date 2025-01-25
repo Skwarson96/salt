@@ -1,5 +1,10 @@
 # Segment Anything Labelling Tool (SALT)
+## What I added
+1. Box prompt - you can use it by clicking the button: `Change prompt type`
 
+
+------------------------------------------------------------
+## Original README.md
 Uses the Segment-Anything Model By Meta AI and adds a barebones interface to label images and saves the masks in the COCO format.
 
 Under active development, apologies for rough edges and bugs. Use at your own risk.
@@ -28,7 +33,6 @@ Under active development, apologies for rough edges and bugs. Use at your own ri
     - `l` and `k` to increase and decrease the transparency of the other annotations.
     - `Ctrl + S` to save progress to the COCO-style annotations file.
     - `Ctrl + mouse wheel` zoom in and out
-    - Click `Change prompt type` to change prompt type between point and box
 7. [coco-viewer](https://github.com/trsvchn/coco-viewer) to view your annotations.
     - `python cocoviewer.py -i <dataset> -a <dataset>/annotations.json`
 
