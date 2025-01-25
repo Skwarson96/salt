@@ -58,31 +58,21 @@ class OnnxModels:
 
                 onnx_box_coords = input_box.reshape(2, 2)
                 onnx_box_labels = np.array([2, 3])
-                onnx_coord = np.concatenate(
-                    [
-                        np.array(
-                            [
-                                [
-                                    (input_box[0][0] + input_box[0][2]) / 2,
-                                    (input_box[0][1] + input_box[0][3]) / 2,
-                                ]
-                            ]
-                        ),
-                        onnx_box_coords,
-                    ],
-                    axis=0,
-                )[None, :, :]
-                onnx_label = np.concatenate([input_label, onnx_box_labels], axis=0)[
-                    None, :
-                ].astype(np.float32)
+
+                onnx_coord = onnx_box_coords[None, :, :]
+                onnx_label = onnx_box_labels[None, :].astype(np.float32)
+
             else:
                 return
+
         onnx_coord = apply_coords(onnx_coord, image.shape[:2]).astype(np.float32)
+
         if onnx_mask_input is None:
             onnx_mask_input = np.zeros((1, 1, 256, 256), dtype=np.float32)
             onnx_has_mask_input = np.zeros(1, dtype=np.float32)
         else:
             onnx_has_mask_input = np.ones(1, dtype=np.float32)
+
         ort_inputs = {
             "image_embeddings": image_embedding,
             "point_coords": onnx_coord,
