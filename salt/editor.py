@@ -41,10 +41,12 @@ class CurrentCapturedInputs:
 
 class Editor:
     def __init__(
-        self, onnx_models_path, dataset_path, categories=None, coco_json_path=None
+        self, onnx_models_path, dataset_path, annotation_type, categories=None, coco_json_path=None
     ):
         self.dataset_path = dataset_path
         self.coco_json_path = coco_json_path
+        self.annotation_type = annotation_type
+
         if categories is None and not os.path.exists(coco_json_path):
             raise ValueError("categories must be provided if coco_json_path is None")
         if self.coco_json_path is None:
@@ -154,7 +156,7 @@ class Editor:
         )
 
     def save(self):
-        self.dataset_explorer.save_annotation()
+        self.dataset_explorer.save_annotation(self.annotation_type)
 
     def change_prompt_type(self):
         if self.prompt_type == "point":

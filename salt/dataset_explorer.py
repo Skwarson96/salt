@@ -8,6 +8,8 @@ from simplification.cutil import simplify_coords_vwp
 import os, cv2, copy
 from distinctipy import distinctipy
 from datetime import datetime
+from utils import remove_segmentations
+
 
 def init_coco(dataset_folder, image_names, categories, coco_json_path):
     coco_json = {
@@ -207,6 +209,21 @@ class DatasetExplorer:
         self.coco_json["annotations"].append(annotation)
         self.global_annotation_id += 1
 
-    def save_annotation(self):
-        with open(self.coco_json_path, "w") as f:
-            json.dump(self.coco_json, f)
+    def save_annotation(self, annotation_type):
+
+        # save global file which is needed for the system to work
+        with open(self.coco_json_path, "w") as file:
+            json.dump(self.coco_json, file)
+
+        # save file for cvat with bbox annotations only
+        data_to_save = self.coco_json.copy()
+        if annotation_type == "bbox" or annotation_type == "rot-bbox":
+            for annotation in data_to_save["annotations"]:
+                annotation["segmentation"] = []
+
+        base_name = os.path.splitext(os.path.basename(self.coco_json_path))[0]
+        new_file_name = f"{base_name}_{annotation_type}.json"
+        new_file_path = os.path.join(os.path.dirname(self.coco_json_path), new_file_name)
+
+        with open(new_file_path, "w") as file:
+            json.dump(data_to_save, file)

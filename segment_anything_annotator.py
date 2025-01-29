@@ -12,10 +12,12 @@ if __name__ == "__main__":
     parser.add_argument("--onnx-models-path", type=str, default="./models")
     parser.add_argument("--dataset-path", type=str, default="./dataset")
     parser.add_argument("--categories", type=str)
+    parser.add_argument("--annotation-type", choices=["bbox", "segmentation", "rot-bbox"], default="bbox")
     args = parser.parse_args()
 
     onnx_models_path = args.onnx_models_path
     dataset_path = args.dataset_path
+
     categories = None
     if args.categories is not None:
         categories = args.categories.split(",")
@@ -25,6 +27,7 @@ if __name__ == "__main__":
     editor = Editor(
         onnx_models_path,
         dataset_path,
+        args.annotation_type,
         categories=categories,
         coco_json_path=coco_json_path,
     )
