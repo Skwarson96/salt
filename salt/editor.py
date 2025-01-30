@@ -94,7 +94,7 @@ class Editor:
                 if ann["id"] == selected_ann:
                     colors[i] = (0, 0, 0)
         # Use this to list the annotations
-        self.display = self.du.draw_annotations(self.display, anns, colors)
+        self.display = self.du.draw_annotations(self.display, anns, colors, self.annotation_type)
 
     def __draw(self, selected_annotations=[]):
         self.display = self.image_bgr.copy()
@@ -152,7 +152,7 @@ class Editor:
 
     def save_ann(self):
         self.dataset_explorer.add_annotation(
-            self.image_id, self.category_id, self.curr_inputs.curr_mask
+            self.image_id, self.category_id, self.curr_inputs.curr_mask, self.annotation_type
         )
 
     def save(self):

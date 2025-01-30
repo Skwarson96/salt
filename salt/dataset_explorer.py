@@ -8,7 +8,6 @@ from simplification.cutil import simplify_coords_vwp
 import os, cv2, copy
 from distinctipy import distinctipy
 from datetime import datetime
-from utils import remove_segmentations
 
 
 def init_coco(dataset_folder, image_names, categories, coco_json_path):
@@ -55,7 +54,6 @@ def bunch_coords(coords):
 def unbunch_coords(coords):
     return list(itertools.chain(*coords))
 
-
 def bounding_box_from_mask(mask):
     mask = mask.astype(np.uint8)
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -66,10 +64,39 @@ def bounding_box_from_mask(mask):
     x, y, w, h = cv2.boundingRect(convex_hull)
     return x, y, w, h
 
+def rot_bounding_box_from_mask(mask):
+    mask = mask.astype(np.uint8)
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    all_contours = []
+    for contour in contours:
+        all_contours.extend(contour)
 
-def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, poly=False):
+    rotated_rect = cv2.minAreaRect(np.array(all_contours))
+    (center, size, angle) = rotated_rect
+
+    # box = cv2.boxPoints(rotated_rect)
+    left_top = (int(center[0]-size[0]/2), int(center[1]-size[1]/2))
+
+    if angle < -45:
+        angle += 90
+    elif angle > 45:
+        angle -= 90
+
+    if angle < 0:
+        angle += 360
+    if angle > 90 and angle <= 270:
+        angle -= 180
+    print(f'left_top: {left_top}, angle: {angle}')
+    return left_top[0], left_top[1], size[0], size[1], angle
+
+
+def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, annotation_type, poly=False):
     start_anno_id = anno_id
-    x, y, width, height = bounding_box_from_mask(image_mask)
+    if annotation_type == 'rot-bbox':
+        x, y, width, height, rotation = rot_bounding_box_from_mask(image_mask)
+    else:
+        x, y, width, height = bounding_box_from_mask(image_mask)
+        rotation = 0
     if poly == False:
         fortran_binary_mask = np.asfortranarray(image_mask)
         encoded_mask = mask.encode(fortran_binary_mask)
@@ -85,6 +112,10 @@ def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, poly=False):
         "area": float(width * height),
         "iscrowd": 0,
         "segmentation": [],
+        "attributes": {
+            "occluded": False,
+            "rotation": rotation
+        }
     }
     if poly == False:
         annotation["segmentation"] = encoded_mask
@@ -199,11 +230,11 @@ class DatasetExplorer:
                 self.annotations_by_image_id[image_id].remove(annotation)
                 break
 
-    def add_annotation(self, image_id, category_id, mask, poly=True):
+    def add_annotation(self, image_id, category_id, mask, annotation_type, poly=True):
         if mask is None:
             return
         annotation = parse_mask_to_coco(
-            image_id, self.global_annotation_id, mask, category_id, poly=poly
+            image_id, self.global_annotation_id, mask, category_id, annotation_type, poly=poly
         )
         self.__add_to_our_annotation_dict(annotation)
         self.coco_json["annotations"].append(annotation)

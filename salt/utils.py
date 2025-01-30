@@ -26,7 +26,3 @@ def apply_coords(coords: np.ndarray, original_size: Tuple[int, ...]) -> np.ndarr
     coords[..., 0] = coords[..., 0] * (new_w / old_w)
     coords[..., 1] = coords[..., 1] * (new_h / old_h)
     return coords
-
-def remove_segmentations(file):
-
-    return file

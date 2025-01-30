@@ -70,9 +70,52 @@ class DisplayUtils:
         )
         return image
 
-    def draw_annotations(self, image, annotations, colors):
+    def draw_rot_box_on_image(self, image, ann, color):
+        x, y, w, h = ann["bbox"]
+        x, y, w, h = int(x), int(y), int(w), int(h)
+        rotation = ann["attributes"]['rotation']
+
+        rect_points = np.array([
+            [x, y],
+            [x + w, y],
+            [x + w, y + h],
+            [x, y + h]
+        ], dtype=np.float32)
+        print(f'rotation before: {rotation}')
+        # calculate rotation angle to format required by getRotationMatrix2D
+        if rotation > 270 and rotation < 360:
+            rotation= 90+(360-rotation)
+        else:
+            rotation = -rotation #- 360
+        print(f'rotation after: {rotation}')
+        center = (x + w / 2, y + h / 2)
+        rotation_matrix = cv2.getRotationMatrix2D(center, rotation, 1.0)
+        rotated_points = cv2.transform(np.array([rect_points]), rotation_matrix)[0]
+
+        if color == (0, 0, 0):
+            image = cv2.fillPoly(image, [np.int32(rotated_points)], color)
+        else:
+            image = cv2.polylines(image, [np.int32(rotated_points)], isClosed=True, color=color,
+                                  thickness=self.box_width)
+
+        image = cv2.putText(
+            image,
+            "id: " + str(ann["id"]),
+            (x, y - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.9,
+            (0, 0, 0),
+            4,
+        )
+        return image
+
+    def draw_annotations(self, image, annotations, colors, annotation_type):
         for ann, color in zip(annotations, colors):
-            image = self.draw_box_on_image(image, ann, color)
+            if annotation_type == 'rot-bbox':
+                image = self.draw_rot_box_on_image(image, ann, color)
+            else:
+                image = self.draw_box_on_image(image, ann, color)
+
             mask = self.__convert_ann_to_mask(ann, image.shape[0], image.shape[1])
             image = self.overlay_mask_on_image(image, mask, color)
         return image
