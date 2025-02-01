@@ -8,6 +8,8 @@ from simplification.cutil import simplify_coords_vwp
 import os, cv2, copy
 from distinctipy import distinctipy
 from datetime import datetime
+import copy
+
 
 def init_coco(dataset_folder, image_names, categories, coco_json_path):
     coco_json = {
@@ -53,7 +55,6 @@ def bunch_coords(coords):
 def unbunch_coords(coords):
     return list(itertools.chain(*coords))
 
-
 def bounding_box_from_mask(mask):
     mask = mask.astype(np.uint8)
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -64,10 +65,30 @@ def bounding_box_from_mask(mask):
     x, y, w, h = cv2.boundingRect(convex_hull)
     return x, y, w, h
 
+def rot_bounding_box_from_mask(mask):
+    mask = mask.astype(np.uint8)
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    all_contours = []
+    for contour in contours:
+        all_contours.extend(contour)
 
-def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, poly=False):
+    rotated_rect = cv2.minAreaRect(np.array(all_contours))
+    (center, size, angle) = rotated_rect
+    left_top = (center[0]-size[0]/2, center[1]-size[1]/2)
+
+    if angle <= 0:
+        angle += 360
+
+    return left_top[0], left_top[1], size[0], size[1], angle
+
+
+def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, annotation_type, poly=False):
     start_anno_id = anno_id
-    x, y, width, height = bounding_box_from_mask(image_mask)
+    if annotation_type == 'rot-bbox':
+        x, y, width, height, rotation = rot_bounding_box_from_mask(image_mask)
+    else:
+        x, y, width, height = bounding_box_from_mask(image_mask)
+        rotation = 0
     if poly == False:
         fortran_binary_mask = np.asfortranarray(image_mask)
         encoded_mask = mask.encode(fortran_binary_mask)
@@ -83,6 +104,10 @@ def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, poly=False):
         "area": float(width * height),
         "iscrowd": 0,
         "segmentation": [],
+        "attributes": {
+            "occluded": False,
+            "rotation": rotation
+        }
     }
     if poly == False:
         annotation["segmentation"] = encoded_mask
@@ -197,16 +222,31 @@ class DatasetExplorer:
                 self.annotations_by_image_id[image_id].remove(annotation)
                 break
 
-    def add_annotation(self, image_id, category_id, mask, poly=True):
+    def add_annotation(self, image_id, category_id, mask, annotation_type, poly=True):
         if mask is None:
             return
         annotation = parse_mask_to_coco(
-            image_id, self.global_annotation_id, mask, category_id, poly=poly
+            image_id, self.global_annotation_id, mask, category_id, annotation_type, poly=poly
         )
         self.__add_to_our_annotation_dict(annotation)
         self.coco_json["annotations"].append(annotation)
         self.global_annotation_id += 1
 
-    def save_annotation(self):
-        with open(self.coco_json_path, "w") as f:
-            json.dump(self.coco_json, f)
+    def save_annotation(self, annotation_type):
+
+        # save global file which is needed for the system to work
+        with open(self.coco_json_path, "w") as file:
+            json.dump(self.coco_json, file)
+
+        # save file for cvat with bbox annotations only
+        data_to_save = copy.deepcopy(self.coco_json)
+        if annotation_type == "bbox" or annotation_type == "rot-bbox":
+            for annotation in data_to_save["annotations"]:
+                annotation["segmentation"] = []
+
+        base_name = os.path.splitext(os.path.basename(self.coco_json_path))[0]
+        new_file_name = f"{base_name}_{annotation_type}.json"
+        new_file_path = os.path.join(os.path.dirname(self.coco_json_path), new_file_name)
+
+        with open(new_file_path, "w") as file:
+            json.dump(data_to_save, file)

@@ -1,7 +1,8 @@
 # Segment Anything Labelling Tool (SALT)
 ## What I added
 1. Box prompt - you can use it by clicking the button: `Change prompt type`
-
+2. Adjust annotations.json file to cvat syntax requirements
+3. Add rotated box
 
 ------------------------------------------------------------
 ## Original README.md

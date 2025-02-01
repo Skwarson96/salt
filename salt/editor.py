@@ -41,10 +41,12 @@ class CurrentCapturedInputs:
 
 class Editor:
     def __init__(
-        self, onnx_models_path, dataset_path, categories=None, coco_json_path=None
+        self, onnx_models_path, dataset_path, annotation_type, categories=None, coco_json_path=None
     ):
         self.dataset_path = dataset_path
         self.coco_json_path = coco_json_path
+        self.annotation_type = annotation_type
+
         if categories is None and not os.path.exists(coco_json_path):
             raise ValueError("categories must be provided if coco_json_path is None")
         if self.coco_json_path is None:
@@ -92,7 +94,7 @@ class Editor:
                 if ann["id"] == selected_ann:
                     colors[i] = (0, 0, 0)
         # Use this to list the annotations
-        self.display = self.du.draw_annotations(self.display, anns, colors)
+        self.display = self.du.draw_annotations(self.display, anns, colors, self.annotation_type)
 
     def __draw(self, selected_annotations=[]):
         self.display = self.image_bgr.copy()
@@ -150,11 +152,11 @@ class Editor:
 
     def save_ann(self):
         self.dataset_explorer.add_annotation(
-            self.image_id, self.category_id, self.curr_inputs.curr_mask
+            self.image_id, self.category_id, self.curr_inputs.curr_mask, self.annotation_type
         )
 
     def save(self):
-        self.dataset_explorer.save_annotation()
+        self.dataset_explorer.save_annotation(self.annotation_type)
 
     def change_prompt_type(self):
         if self.prompt_type == "point":
