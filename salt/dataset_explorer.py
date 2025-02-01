@@ -73,20 +73,11 @@ def rot_bounding_box_from_mask(mask):
 
     rotated_rect = cv2.minAreaRect(np.array(all_contours))
     (center, size, angle) = rotated_rect
+    left_top = (center[0]-size[0]/2, center[1]-size[1]/2)
 
-    # box = cv2.boxPoints(rotated_rect)
-    left_top = (int(center[0]-size[0]/2), int(center[1]-size[1]/2))
-
-    if angle < -45:
-        angle += 90
-    elif angle > 45:
-        angle -= 90
-
-    if angle < 0:
+    if angle <= 0:
         angle += 360
-    if angle > 90 and angle <= 270:
-        angle -= 180
-    print(f'left_top: {left_top}, angle: {angle}')
+
     return left_top[0], left_top[1], size[0], size[1], angle
 
 

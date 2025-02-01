@@ -81,13 +81,11 @@ class DisplayUtils:
             [x + w, y + h],
             [x, y + h]
         ], dtype=np.float32)
-        print(f'rotation before: {rotation}')
+
         # calculate rotation angle to format required by getRotationMatrix2D
-        if rotation > 270 and rotation < 360:
-            rotation= 90+(360-rotation)
-        else:
-            rotation = -rotation #- 360
-        print(f'rotation after: {rotation}')
+        rotation = np.round(rotation, 2)
+        rotation = -rotation
+
         center = (x + w / 2, y + h / 2)
         rotation_matrix = cv2.getRotationMatrix2D(center, rotation, 1.0)
         rotated_points = cv2.transform(np.array([rect_points]), rotation_matrix)[0]
