@@ -8,6 +8,7 @@ from simplification.cutil import simplify_coords_vwp
 import os, cv2, copy
 from distinctipy import distinctipy
 from datetime import datetime
+import copy
 
 
 def init_coco(dataset_folder, image_names, categories, coco_json_path):
@@ -238,7 +239,7 @@ class DatasetExplorer:
             json.dump(self.coco_json, file)
 
         # save file for cvat with bbox annotations only
-        data_to_save = self.coco_json.copy()
+        data_to_save = copy.deepcopy(self.coco_json)
         if annotation_type == "bbox" or annotation_type == "rot-bbox":
             for annotation in data_to_save["annotations"]:
                 annotation["segmentation"] = []
