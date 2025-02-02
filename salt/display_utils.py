@@ -78,7 +78,7 @@ class DisplayUtils:
         rotation = np.round(rotation, 2)
         rotation = -rotation
 
-        center = (x + w / 2, y + h / 2)
+        center = (int(x + w / 2), int(y + h / 2))
         rotation_matrix = cv2.getRotationMatrix2D(center, rotation, 1.0)
         rotated_points = cv2.transform(np.array([rect_points]), rotation_matrix)[0]
 
@@ -87,6 +87,16 @@ class DisplayUtils:
         else:
             image = cv2.polylines(image, [np.int32(rotated_points)], isClosed=True, color=color,
                                   thickness=self.box_width)
+
+        # Draw center point:
+        image = cv2.circle(image, tuple(center), 5, (255, 0, 255), -1)
+
+        # Draw rotation point:
+        rotation_marker_distance = h / 2
+        angle_rad = np.radians(rotation+90)
+        marker_x = int(center[0] + rotation_marker_distance * np.cos(angle_rad))
+        marker_y = int(center[1] - rotation_marker_distance * np.sin(angle_rad))
+        image = cv2.circle(image, (marker_x, marker_y), 5, (0, 165, 255), -1)
 
         image = cv2.putText(
             image,

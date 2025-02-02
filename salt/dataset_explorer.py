@@ -73,13 +73,42 @@ def rot_bounding_box_from_mask(mask):
         all_contours.extend(contour)
 
     rotated_rect = cv2.minAreaRect(np.array(all_contours))
+
     (center, size, angle) = rotated_rect
-    left_top = (center[0]-size[0]/2, center[1]-size[1]/2)
 
-    if angle <= 0:
-        angle += 360
+    box_points = cv2.boxPoints(rotated_rect)
+    # sort points by Y axis
+    sorted_points = sorted(box_points, key=lambda p: p[1], reverse=False)
+    # find two lowest points
+    lower_1 = sorted_points[0]
+    lower_2 = sorted_points[1]
+    # find lowest left and lowest right points
+    if lower_1[0] > lower_2[0]:
+        lower_left, lower_right = lower_2, lower_1
+    else:
+        lower_left, lower_right = lower_1, lower_2
+    # calculate deltas
+    dx = lower_right[0] - lower_left[0]
+    dy = lower_right[1] - lower_left[1]
+    # calcualte angle beetwen X axis and two lowest points
+    angle_rad = np.arctan2(dy, dx)
+    angle_deg = float(np.degrees(angle_rad))
+    angle_deg = np.round(angle_deg, 2)
 
-    return left_top[0], left_top[1], size[0], size[1], angle
+    width = size[0]
+    height = size[1]
+
+    if angle_deg <= 0:
+        angle_deg += 360
+        width = size[1]
+        height = size[0]
+    # angle need to be: [0, 360)
+    if angle_deg == 360:
+        angle_deg = 0
+
+    not_rotated_left_top = (center[0] - width / 2, center[1] - height / 2)
+
+    return not_rotated_left_top[0], not_rotated_left_top[1], width, height, angle_deg
 
 
 def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, annotation_type, poly=False):

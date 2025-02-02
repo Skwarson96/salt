@@ -3,6 +3,7 @@
 1. Box prompt - you can use it by clicking the button: `Change prompt type`
 2. Adjust annotations.json file to cvat syntax requirements
 3. Add rotated box
+4. Drawing rotation mark point
 
 ------------------------------------------------------------
 ## Original README.md
