@@ -75,6 +75,7 @@ class Editor:
         self.du = DisplayUtils()
         self.reset()
         self.prompt_type = "point"
+        self.drawing_arrow = False
 
     def list_annotations(self):
         anns, colors = self.dataset_explorer.get_annotations(

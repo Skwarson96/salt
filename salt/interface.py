@@ -104,6 +104,7 @@ class CustomGraphicsView(QGraphicsView):
                     self.start_point = event.pos()
                     self.end_point = event.pos()
                     self.is_box_added = False
+
             elif event.button() == Qt.RightButton:
                 label = 0
             if label is not None:
@@ -123,8 +124,15 @@ class CustomGraphicsView(QGraphicsView):
                 2,
             )
             self.imshow(temp_image)
+        if self.editor.drawing_arrow:
+            self.end_point = event.pos()
+            temp_image = self.editor.display.copy()
+            cv2.arrowedLine(temp_image, (200, 200), (500, 600), (0, 255, 0), 2, tipLength=0.3)
+            self.imshow(temp_image)
+
 
     def mouseReleaseEvent(self, event):
+        self.editor.drawing_arrow = False
         if event.button() == Qt.LeftButton:
             if self.editor.prompt_type == "box" and self.drawing:
                 self.drawing = False
@@ -181,6 +189,8 @@ class ApplicationInterface(QWidget):
         self.setLayout(self.layout)
 
         self.graphics_view.imshow(self.editor.display)
+
+        self.b_pressed = False
 
     def reset(self):
         global selected_annotations
@@ -329,8 +339,17 @@ class ApplicationInterface(QWidget):
             self.toggle()
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_S:
             self.save_all()
-        elif event.key() == Qt.Key_Space:
+        if event.key() == Qt.Key_B and not self.b_pressed:
+            self.b_pressed = True
+            self.editor.drawing_arrow = True
+        if event.key() == Qt.Key_Space:
             print("Space pressed")
             # self.clear_annotations(selected_annotations)
             # Do something if the space bar is pressed
             # pass
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_B:
+            self.b_pressed = False
+            self.editor.drawing_arrow = False
+
