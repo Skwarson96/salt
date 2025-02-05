@@ -9,7 +9,7 @@ import os, cv2, copy
 from distinctipy import distinctipy
 from datetime import datetime
 import copy
-
+import math
 
 def init_coco(dataset_folder, image_names, categories, coco_json_path):
     coco_json = {
@@ -65,7 +65,13 @@ def bounding_box_from_mask(mask):
     x, y, w, h = cv2.boundingRect(convex_hull)
     return x, y, w, h
 
-def rot_bounding_box_from_mask(mask):
+def rot_bounding_box_from_mask(mask, arrow_pos):
+    print(f'arrow_pos: {arrow_pos}')
+
+    if arrow_pos[0] != None and arrow_pos[1] != None:
+        accurate_angle = calculate_angle((arrow_pos[0].x(), arrow_pos[0].y()), (arrow_pos[1].x(), arrow_pos[1].y()))
+        print(f'accurate_angle: {accurate_angle}')
+
     mask = mask.astype(np.uint8)
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     all_contours = []
@@ -111,10 +117,45 @@ def rot_bounding_box_from_mask(mask):
     return not_rotated_left_top[0], not_rotated_left_top[1], width, height, angle_deg
 
 
-def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, annotation_type, poly=False):
+def calculate_angle(start_point, end_point):
+    dx = end_point[0] - start_point[0]
+    dy = end_point[1] - start_point[1]
+
+    angle_rad = math.atan2(dy, dx)
+    angle_deg = math.degrees(angle_rad) % 360
+
+    if dx > 0 and dy > 0:
+        # angle from 90 to 180
+        # print('angle from 90 to 180')
+        angle_deg = 90 + abs(angle_deg)
+    if dx < 0 and dy > 0:
+        # angle from 180 to 270
+        print('angle from 180 to 270')
+        angle_deg = 90 + abs(angle_deg)
+    if dx <= 0 and dy < 0:
+        # angle from 270 to 360
+        # print('angle from 270 to 360')
+        angle_deg = 270 + abs(180 - angle_deg)
+    if dx > 0 and dy < 0:
+        # angle from 0 to 90
+        # print('angle from 0 to 90')
+        angle_deg = 90 - abs(360 - angle_deg)
+
+    if dx == 0 and dy <= 0:
+        angle_deg = 0
+    if dx >= 0 and dy == 0:
+        angle_deg = 90
+    if dx == 0 and dy >= 0:
+        angle_deg = 180
+    if dx <= 0 and dy == 0:
+        angle_deg = 270
+
+    return angle_deg
+
+def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, annotation_type, arrow_pos, poly=False):
     start_anno_id = anno_id
     if annotation_type == 'rot-bbox':
-        x, y, width, height, rotation = rot_bounding_box_from_mask(image_mask)
+        x, y, width, height, rotation = rot_bounding_box_from_mask(image_mask, arrow_pos)
     else:
         x, y, width, height = bounding_box_from_mask(image_mask)
         rotation = 0
@@ -251,11 +292,11 @@ class DatasetExplorer:
                 self.annotations_by_image_id[image_id].remove(annotation)
                 break
 
-    def add_annotation(self, image_id, category_id, mask, annotation_type, poly=True):
+    def add_annotation(self, image_id, category_id, mask, annotation_type, arrow_pos, poly=True):
         if mask is None:
             return
         annotation = parse_mask_to_coco(
-            image_id, self.global_annotation_id, mask, category_id, annotation_type, poly=poly
+            image_id, self.global_annotation_id, mask, category_id, annotation_type, arrow_pos, poly=poly
         )
         self.__add_to_our_annotation_dict(annotation)
         self.coco_json["annotations"].append(annotation)
