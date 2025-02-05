@@ -94,22 +94,40 @@ class CustomGraphicsView(QGraphicsView):
             print("Control/ Command key pressed during a mouse click")
             # self.editor.remove_click([int(x), int(y)])
         else:
-            pos = event.pos()
-            pos_in_item = self.mapToScene(pos) - self.display_image.pos()
-            x, y = pos_in_item.x(), pos_in_item.y()
-            if event.button() == Qt.LeftButton:
-                label = 1
-                if self.editor.prompt_type == "box" and self.is_box_added:
-                    self.drawing = True
-                    self.start_point = event.pos()
-                    self.end_point = event.pos()
-                    self.is_box_added = False
+            if self.editor.drawing_arrow and not self.editor.arrow_exist:
+                self.editor.arrow_pos[0] = event.pos()
+                temp_image = self.editor.display.copy()
+                # if self.editor.drawing_arrow:
+                #     font = cv2.FONT_HERSHEY_SIMPLEX
+                #     org = (50, 50)
+                #     fontScale = 1
+                #     color = (255, 0, 0)
+                #     thickness = 2
+                #     cv2.putText(temp_image, 'OpenCV', org, font,
+                #                       fontScale, color, thickness, cv2.LINE_AA)
+                cv2.arrowedLine(temp_image,
+                                (int(self.editor.arrow_pos[0].x()), int(self.editor.arrow_pos[0].y())),
+                                (int(self.editor.arrow_pos[0].x()), int(self.editor.arrow_pos[0].y())), (0, 255, 0), 2,
+                                tipLength=0.3)
+                # self.imshow(temp_image)
+            else:
+                pos = event.pos()
+                pos_in_item = self.mapToScene(pos) - self.display_image.pos()
+                x, y = pos_in_item.x(), pos_in_item.y()
+                if event.button() == Qt.LeftButton:
+                    label = 1
+                    if self.editor.prompt_type == "box" and self.is_box_added:
+                        self.drawing = True
+                        self.start_point = event.pos()
+                        self.end_point = event.pos()
+                        self.is_box_added = False
 
-            elif event.button() == Qt.RightButton:
-                label = 0
-            if label is not None:
-                if self.editor.prompt_type == "point":
-                    self.editor.add_click([int(x), int(y)], label, selected_annotations)
+                elif event.button() == Qt.RightButton:
+                    label = 0
+                if label is not None:
+                    if self.editor.prompt_type == "point":
+                        self.editor.add_click([int(x), int(y)], label, selected_annotations)
+
         self.imshow(self.editor.display)
 
     def mouseMoveEvent(self, event):
@@ -124,15 +142,18 @@ class CustomGraphicsView(QGraphicsView):
                 2,
             )
             self.imshow(temp_image)
-        if self.editor.drawing_arrow:
-            self.end_point = event.pos()
+
+        if self.editor.drawing_arrow and self.editor.arrow_pos[0] != None and not self.editor.arrow_exist:
+            self.editor.arrow_pos[1] = event.pos()
             temp_image = self.editor.display.copy()
-            cv2.arrowedLine(temp_image, (200, 200), (500, 600), (0, 255, 0), 2, tipLength=0.3)
+            cv2.arrowedLine(temp_image, (
+                            int(self.editor.arrow_pos[0].x()), int(self.editor.arrow_pos[0].y())),
+                            (int(self.editor.arrow_pos[1].x()), int(self.editor.arrow_pos[1].y())),
+                            (0, 255, 0), 2, tipLength=0.3)
             self.imshow(temp_image)
 
 
     def mouseReleaseEvent(self, event):
-        self.editor.drawing_arrow = False
         if event.button() == Qt.LeftButton:
             if self.editor.prompt_type == "box" and self.drawing:
                 self.drawing = False
@@ -155,7 +176,13 @@ class CustomGraphicsView(QGraphicsView):
                     label,
                     selected_annotations,
                 )
-                self.imshow(self.editor.display)
+            if self.editor.drawing_arrow and not self.editor.arrow_exist:
+                self.editor.arrow_exist = True
+                self.editor.arrow_pos[1] = event.pos()
+                temp_image = self.editor.display.copy()
+                cv2.arrowedLine(self.editor.display, (int(self.editor.arrow_pos[0].x()), int(self.editor.arrow_pos[0].y())), (int(self.editor.arrow_pos[1].x()), int(self.editor.arrow_pos[1].y())), (0, 255, 0), 2,
+                                tipLength=0.3)
+                # self.imshow(temp_image)
 
 
 class ApplicationInterface(QWidget):
@@ -196,6 +223,7 @@ class ApplicationInterface(QWidget):
         global selected_annotations
         self.editor.reset(selected_annotations)
         self.graphics_view.is_box_added = True
+        self.editor.arrow_exist = False
         self.graphics_view.imshow(self.editor.display)
 
     def add(self):
@@ -203,6 +231,7 @@ class ApplicationInterface(QWidget):
         self.editor.save_ann()
         self.editor.reset(selected_annotations)
         self.graphics_view.is_box_added = True
+        self.editor.arrow_exist = False
         self.graphics_view.imshow(self.editor.display)
 
     def next_image(self):
@@ -339,17 +368,11 @@ class ApplicationInterface(QWidget):
             self.toggle()
         if event.modifiers() == Qt.ControlModifier and event.key() == Qt.Key_S:
             self.save_all()
-        if event.key() == Qt.Key_B and not self.b_pressed:
-            self.b_pressed = True
-            self.editor.drawing_arrow = True
+        if event.key() == Qt.Key_B:
+            self.b_pressed = not self.b_pressed
+            if self.b_pressed:
+                self.editor.drawing_arrow = True
+            else:
+                self.editor.drawing_arrow = False
         if event.key() == Qt.Key_Space:
             print("Space pressed")
-            # self.clear_annotations(selected_annotations)
-            # Do something if the space bar is pressed
-            # pass
-
-    def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_B:
-            self.b_pressed = False
-            self.editor.drawing_arrow = False
-
