@@ -75,6 +75,9 @@ class Editor:
         self.du = DisplayUtils()
         self.reset()
         self.prompt_type = "point"
+        self.arrow_exist = False
+        self.drawing_arrow = False
+        self.arrow_pos = [None, None] # [start point, end point]
 
     def list_annotations(self):
         anns, colors = self.dataset_explorer.get_annotations(
@@ -131,6 +134,7 @@ class Editor:
 
     def reset(self, hard=True, selected_annotations=[]):
         self.curr_inputs.reset_inputs()
+        self.arrow_pos = [None, None]
         self.__draw(selected_annotations)
 
     def toggle(self, selected_annotations=[]):
@@ -151,8 +155,9 @@ class Editor:
         self.__draw(selected_annotations)
 
     def save_ann(self):
+        # self.arrow_pos = [None, None]
         self.dataset_explorer.add_annotation(
-            self.image_id, self.category_id, self.curr_inputs.curr_mask, self.annotation_type
+            self.image_id, self.category_id, self.curr_inputs.curr_mask, self.annotation_type, self.arrow_pos
         )
 
     def save(self):
