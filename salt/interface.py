@@ -372,7 +372,9 @@ class ApplicationInterface(QWidget):
             self.b_pressed = not self.b_pressed
             if self.b_pressed:
                 self.editor.drawing_arrow = True
+                print("B key pressed - arrow mode ON")
             else:
                 self.editor.drawing_arrow = False
+                print("B key released - arrow mode OFF")
         if event.key() == Qt.Key_Space:
             print("Space pressed")
