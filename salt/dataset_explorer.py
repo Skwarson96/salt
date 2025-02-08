@@ -11,6 +11,7 @@ from datetime import datetime
 import copy
 import math
 
+
 def init_coco(dataset_folder, image_names, categories, coco_json_path):
     coco_json = {
         "info": {
@@ -18,7 +19,7 @@ def init_coco(dataset_folder, image_names, categories, coco_json_path):
             "url": "",
             "version": "1.0",
             "contributor": "Sam",
-            "date_created": datetime.today().strftime('%Y-%m-%d'),
+            "date_created": datetime.today().strftime("%Y-%m-%d"),
         },
         "images": [],
         "annotations": [],
@@ -55,6 +56,7 @@ def bunch_coords(coords):
 def unbunch_coords(coords):
     return list(itertools.chain(*coords))
 
+
 def bounding_box_from_mask(mask):
     mask = mask.astype(np.uint8)
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -65,13 +67,8 @@ def bounding_box_from_mask(mask):
     x, y, w, h = cv2.boundingRect(convex_hull)
     return x, y, w, h
 
+
 def rot_bounding_box_from_mask(mask, arrow_pos):
-    print(f'arrow_pos: {arrow_pos}')
-
-    if arrow_pos[0] != None and arrow_pos[1] != None:
-        accurate_angle = calculate_angle((arrow_pos[0].x(), arrow_pos[0].y()), (arrow_pos[1].x(), arrow_pos[1].y()))
-        print(f'accurate_angle: {accurate_angle}')
-
     mask = mask.astype(np.uint8)
     contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     all_contours = []
@@ -79,9 +76,10 @@ def rot_bounding_box_from_mask(mask, arrow_pos):
         all_contours.extend(contour)
 
     rotated_rect = cv2.minAreaRect(np.array(all_contours))
-
     (center, size, angle) = rotated_rect
 
+
+    # else:
     box_points = cv2.boxPoints(rotated_rect)
     # sort points by Y axis
     sorted_points = sorted(box_points, key=lambda p: p[1], reverse=False)
@@ -112,7 +110,19 @@ def rot_bounding_box_from_mask(mask, arrow_pos):
     if angle_deg == 360:
         angle_deg = 0
 
+    if arrow_pos[0] != None and arrow_pos[1] != None:
+        angle_deg = calculate_angle(
+            (arrow_pos[0].x(), arrow_pos[0].y()), (arrow_pos[1].x(), arrow_pos[1].y())
+        )
+        angle_rad = np.deg2rad(angle_deg)
+        width = size[0]
+        height = size[1]
+        width = abs(width * np.cos(angle_rad)) + abs(height * np.sin(angle_rad))
+        height = abs(height * np.cos(angle_rad)) + abs(width * np.sin(angle_rad))
+
+
     not_rotated_left_top = (center[0] - width / 2, center[1] - height / 2)
+
 
     return not_rotated_left_top[0], not_rotated_left_top[1], width, height, angle_deg
 
@@ -130,7 +140,7 @@ def calculate_angle(start_point, end_point):
         angle_deg = 90 + abs(angle_deg)
     if dx < 0 and dy > 0:
         # angle from 180 to 270
-        print('angle from 180 to 270')
+        print("angle from 180 to 270")
         angle_deg = 90 + abs(angle_deg)
     if dx <= 0 and dy < 0:
         # angle from 270 to 360
@@ -152,10 +162,15 @@ def calculate_angle(start_point, end_point):
 
     return angle_deg
 
-def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, annotation_type, arrow_pos, poly=False):
+
+def parse_mask_to_coco(
+    image_id, anno_id, image_mask, category_id, annotation_type, arrow_pos, poly=False
+):
     start_anno_id = anno_id
-    if annotation_type == 'rot-bbox':
-        x, y, width, height, rotation = rot_bounding_box_from_mask(image_mask, arrow_pos)
+    if annotation_type == "rot-bbox":
+        x, y, width, height, rotation = rot_bounding_box_from_mask(
+            image_mask, arrow_pos
+        )
     else:
         x, y, width, height = bounding_box_from_mask(image_mask)
         rotation = 0
@@ -174,10 +189,7 @@ def parse_mask_to_coco(image_id, anno_id, image_mask, category_id, annotation_ty
         "area": float(width * height),
         "iscrowd": 0,
         "segmentation": [],
-        "attributes": {
-            "occluded": False,
-            "rotation": rotation
-        }
+        "attributes": {"occluded": False, "rotation": rotation},
     }
     if poly == False:
         annotation["segmentation"] = encoded_mask
@@ -254,8 +266,10 @@ class DatasetExplorer:
         return len(self.image_names)
 
     def get_image_data(self, image_id):
-        image_name = self.coco_json["images"][image_id-1]["file_name"]
-        image_path = os.path.join(self.dataset_folder, os.path.join('images', image_name))
+        image_name = self.coco_json["images"][image_id - 1]["file_name"]
+        image_path = os.path.join(
+            self.dataset_folder, os.path.join("images", image_name)
+        )
         embedding_path = os.path.join(
             self.dataset_folder,
             "embeddings",
@@ -292,18 +306,25 @@ class DatasetExplorer:
                 self.annotations_by_image_id[image_id].remove(annotation)
                 break
 
-    def add_annotation(self, image_id, category_id, mask, annotation_type, arrow_pos, poly=True):
+    def add_annotation(
+        self, image_id, category_id, mask, annotation_type, arrow_pos, poly=True
+    ):
         if mask is None:
             return
         annotation = parse_mask_to_coco(
-            image_id, self.global_annotation_id, mask, category_id, annotation_type, arrow_pos, poly=poly
+            image_id,
+            self.global_annotation_id,
+            mask,
+            category_id,
+            annotation_type,
+            arrow_pos,
+            poly=poly,
         )
         self.__add_to_our_annotation_dict(annotation)
         self.coco_json["annotations"].append(annotation)
         self.global_annotation_id += 1
 
     def save_annotation(self, annotation_type):
-
         # save global file which is needed for the system to work
         with open(self.coco_json_path, "w") as file:
             json.dump(self.coco_json, file)
@@ -316,7 +337,9 @@ class DatasetExplorer:
 
         base_name = os.path.splitext(os.path.basename(self.coco_json_path))[0]
         new_file_name = f"{base_name}_{annotation_type}.json"
-        new_file_path = os.path.join(os.path.dirname(self.coco_json_path), new_file_name)
+        new_file_path = os.path.join(
+            os.path.dirname(self.coco_json_path), new_file_name
+        )
 
         with open(new_file_path, "w") as file:
             json.dump(data_to_save, file)
