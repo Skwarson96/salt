@@ -78,8 +78,6 @@ def rot_bounding_box_from_mask(mask, arrow_pos):
     rotated_rect = cv2.minAreaRect(np.array(all_contours))
     (center, size, angle) = rotated_rect
 
-
-    # else:
     box_points = cv2.boxPoints(rotated_rect)
     # sort points by Y axis
     sorted_points = sorted(box_points, key=lambda p: p[1], reverse=False)
@@ -111,14 +109,21 @@ def rot_bounding_box_from_mask(mask, arrow_pos):
         angle_deg = 0
 
     if arrow_pos[0] != None and arrow_pos[1] != None:
-        angle_deg = calculate_angle(
+        accurate_angle_deg = calculate_angle(
             (arrow_pos[0].x(), arrow_pos[0].y()), (arrow_pos[1].x(), arrow_pos[1].y())
         )
-        angle_rad = np.deg2rad(angle_deg)
-        width = size[0]
-        height = size[1]
-        width = abs(width * np.cos(angle_rad)) + abs(height * np.sin(angle_rad))
-        height = abs(height * np.cos(angle_rad)) + abs(width * np.sin(angle_rad))
+
+        all_contours = np.vstack(contours)
+
+        M = cv2.moments(all_contours)
+        cx = int(M['m10'] / M['m00'])
+        cy = int(M['m01'] / M['m00'])
+
+        rotation_matrix = cv2.getRotationMatrix2D((cx, cy), accurate_angle_deg, 1.0)
+        rotated_contour = cv2.transform(all_contours, rotation_matrix)
+
+        x, y, width, height = cv2.boundingRect(rotated_contour)
+        angle_deg = accurate_angle_deg
 
 
     not_rotated_left_top = (center[0] - width / 2, center[1] - height / 2)
@@ -136,19 +141,15 @@ def calculate_angle(start_point, end_point):
 
     if dx > 0 and dy > 0:
         # angle from 90 to 180
-        # print('angle from 90 to 180')
         angle_deg = 90 + abs(angle_deg)
     if dx < 0 and dy > 0:
         # angle from 180 to 270
-        print("angle from 180 to 270")
         angle_deg = 90 + abs(angle_deg)
     if dx <= 0 and dy < 0:
         # angle from 270 to 360
-        # print('angle from 270 to 360')
         angle_deg = 270 + abs(180 - angle_deg)
     if dx > 0 and dy < 0:
         # angle from 0 to 90
-        # print('angle from 0 to 90')
         angle_deg = 90 - abs(360 - angle_deg)
 
     if dx == 0 and dy <= 0:
