@@ -165,7 +165,7 @@ def calculate_angle(start_point, end_point):
 
 
 def parse_mask_to_coco(
-    image_id, anno_id, image_mask, category_id, annotation_type, arrow_pos, poly=False
+    image_id, anno_id, image_mask, category_id, annotation_type, arrow_pos
 ):
     start_anno_id = anno_id
     if annotation_type == "rot-bbox":
@@ -175,13 +175,9 @@ def parse_mask_to_coco(
     else:
         x, y, width, height = bounding_box_from_mask(image_mask)
         rotation = 0
-    if poly == False:
-        fortran_binary_mask = np.asfortranarray(image_mask)
-        encoded_mask = mask.encode(fortran_binary_mask)
-    if poly == True:
-        contours, _ = cv2.findContours(
-            image_mask.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE
-        )
+    contours, _ = cv2.findContours(
+        image_mask.astype(np.uint8), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE
+    )
     annotation = {
         "id": start_anno_id,
         "image_id": image_id,
@@ -192,21 +188,16 @@ def parse_mask_to_coco(
         "segmentation": [],
         "attributes": {"occluded": False, "rotation": rotation},
     }
-    if poly == False:
-        annotation["segmentation"] = encoded_mask
-        annotation["segmentation"]["counts"] = str(
-            annotation["segmentation"]["counts"], "utf-8"
-        )
-    if poly == True:
-        for contour in contours:
-            sc = simplify_coords_vwp(contour[:, 0, :], 2).ravel().tolist()
-            tol = 1e-3
-            cleaned = []
-            for x, y in zip(sc[::2], sc[1::2]):
-                if x > tol and y > tol:
-                    cleaned.append(x)
-                    cleaned.append(y)
-            annotation["segmentation"].append(cleaned)
+    for contour in contours:
+        sc = simplify_coords_vwp(contour[:, 0, :], 2).ravel().tolist()
+        tol = 1e-3
+        cleaned = []
+        for x, y in zip(sc[::2], sc[1::2]):
+            if x > tol and y > tol:
+                cleaned.append(x)
+                cleaned.append(y)
+        annotation["segmentation"].append(cleaned)
+    annotation["segmentation"] = [list(itertools.chain(*annotation["segmentation"]))]
     return annotation
 
 
@@ -308,9 +299,9 @@ class DatasetExplorer:
                 break
 
     def add_annotation(
-        self, image_id, category_id, mask, annotation_type, arrow_pos, poly=True
+        self, image_id, category_id, mask, annotation_type, arrow_pos
     ):
-        if mask is None:
+        if mask is None or not mask.any():
             return
         annotation = parse_mask_to_coco(
             image_id,
@@ -319,7 +310,6 @@ class DatasetExplorer:
             category_id,
             annotation_type,
             arrow_pos,
-            poly=poly,
         )
         self.__add_to_our_annotation_dict(annotation)
         self.coco_json["annotations"].append(annotation)
