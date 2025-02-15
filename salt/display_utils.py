@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from pycocotools import mask as coco_mask
 
 
 class DisplayUtils:
@@ -28,21 +27,12 @@ class DisplayUtils:
 
     def __convert_ann_to_mask(self, ann, height, width):
         mask = np.zeros((height, width), dtype=np.uint8)
-        poly = ann["segmentation"]
+        segmentation = ann["segmentation"][0]
+        points = np.array(segmentation, dtype=np.float32).reshape((-1, 1, 2))
+        points = points.astype(np.int32)
+        cv2.fillPoly(mask, [points], color=1)
 
-        poly = [np.array(p, dtype=np.float32).flatten() for p in poly]
-
-        for i in range(len(poly)):
-            if len(poly[i]) == 4:
-                poly[i] = np.append(poly[i], poly[i][-2:])
-
-        rles = coco_mask.frPyObjects(poly, height, width)
-        rle = coco_mask.merge(rles)
-        mask_instance = coco_mask.decode(rle)
-        mask_instance = np.logical_not(mask_instance)
-        mask = np.logical_or(mask, mask_instance)
-        mask = np.logical_not(mask)
-        return mask
+        return mask.astype(bool)
 
     def draw_box_on_image(self, image, ann, color):
         x, y, w, h = ann["bbox"]
