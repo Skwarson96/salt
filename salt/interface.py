@@ -22,6 +22,8 @@ from PyQt5.QtWidgets import (
     QRadioButton,
 )
 
+from salt.utils import get_pos
+
 selected_annotations = []
 
 
@@ -48,8 +50,8 @@ class CustomGraphicsView(QGraphicsView):
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
 
-        self.start_point = QPoint()
-        self.end_point = QPoint()
+        self.start_point = None
+        self.end_point = None
         self.drawing = False
         self.display_image = None
         self.curr_image = None
@@ -63,7 +65,6 @@ class CustomGraphicsView(QGraphicsView):
         else:
             self.display_image = self.scene.addPixmap(pixmap)
             self.setSceneRect(QRectF(pixmap.rect()))
-        # self.curr_image = self.editor.image.copy()
 
     def wheelEvent(self, event: QWheelEvent):
         modifiers = QApplication.keyboardModifiers()
@@ -92,34 +93,22 @@ class CustomGraphicsView(QGraphicsView):
         label = None
         if modifiers == Qt.ControlModifier:
             print("Control/ Command key pressed during a mouse click")
-            # self.editor.remove_click([int(x), int(y)])
         else:
             if self.editor.drawing_arrow and not self.editor.arrow_exist:
-                self.editor.arrow_pos[0] = event.pos()
+                self.editor.arrow_pos[0] = get_pos(event, self.mapToScene, self.display_image) #event.pos()
                 temp_image = self.editor.display.copy()
-                # if self.editor.drawing_arrow:
-                #     font = cv2.FONT_HERSHEY_SIMPLEX
-                #     org = (50, 50)
-                #     fontScale = 1
-                #     color = (255, 0, 0)
-                #     thickness = 2
-                #     cv2.putText(temp_image, 'OpenCV', org, font,
-                #                       fontScale, color, thickness, cv2.LINE_AA)
                 cv2.arrowedLine(temp_image,
-                                (int(self.editor.arrow_pos[0].x()), int(self.editor.arrow_pos[0].y())),
-                                (int(self.editor.arrow_pos[0].x()), int(self.editor.arrow_pos[0].y())), (0, 255, 0), 2,
+                                (int(self.editor.arrow_pos[0][0]), int(self.editor.arrow_pos[0][1])),
+                                (int(self.editor.arrow_pos[0][0]), int(self.editor.arrow_pos[0][1])), (0, 255, 0), 2,
                                 tipLength=0.3)
-                # self.imshow(temp_image)
             else:
-                pos = event.pos()
-                pos_in_item = self.mapToScene(pos) - self.display_image.pos()
-                x, y = pos_in_item.x(), pos_in_item.y()
+                x, y = get_pos(event, self.mapToScene, self.display_image)
                 if event.button() == Qt.LeftButton:
                     label = 1
                     if self.editor.prompt_type == "box" and self.is_box_added:
                         self.drawing = True
-                        self.start_point = event.pos()
-                        self.end_point = event.pos()
+                        self.start_point = get_pos(event, self.mapToScene, self.display_image)#event.pos()
+                        self.end_point = get_pos(event, self.mapToScene, self.display_image)#event.pos()
                         self.is_box_added = False
 
                 elif event.button() == Qt.RightButton:
@@ -132,23 +121,23 @@ class CustomGraphicsView(QGraphicsView):
 
     def mouseMoveEvent(self, event):
         if self.drawing:
-            self.end_point = event.pos()
+            self.end_point = get_pos(event, self.mapToScene, self.display_image)#event.pos()
             temp_image = self.editor.display.copy()
             cv2.rectangle(
                 temp_image,
-                (self.start_point.x(), self.start_point.y()),
-                (self.end_point.x(), self.end_point.y()),
+                (int(self.start_point[0]), int(self.start_point[1])),
+                (int(self.end_point[0]), int(self.end_point[1])),
                 (0, 255, 0),
                 2,
             )
             self.imshow(temp_image)
 
         if self.editor.drawing_arrow and self.editor.arrow_pos[0] != None and not self.editor.arrow_exist:
-            self.editor.arrow_pos[1] = event.pos()
+            self.editor.arrow_pos[1] = get_pos(event, self.mapToScene, self.display_image)
             temp_image = self.editor.display.copy()
             cv2.arrowedLine(temp_image, (
-                            int(self.editor.arrow_pos[0].x()), int(self.editor.arrow_pos[0].y())),
-                            (int(self.editor.arrow_pos[1].x()), int(self.editor.arrow_pos[1].y())),
+                            int(self.editor.arrow_pos[0][0]), int(self.editor.arrow_pos[0][1])),
+                            (int(self.editor.arrow_pos[1][0]), int(self.editor.arrow_pos[1][1])),
                             (0, 255, 0), 2, tipLength=0.3)
             self.imshow(temp_image)
 
@@ -157,32 +146,30 @@ class CustomGraphicsView(QGraphicsView):
         if event.button() == Qt.LeftButton:
             if self.editor.prompt_type == "box" and self.drawing:
                 self.drawing = False
-                self.end_point = event.pos()
+                self.end_point = get_pos(event, self.mapToScene, self.display_image)#event.pos()
                 cv2.rectangle(
                     self.editor.display,
-                    (self.start_point.x(), self.start_point.y()),
-                    (self.end_point.x(), self.end_point.y()),
+                    (int(self.start_point[0]), int(self.start_point[1])),
+                    (int(self.end_point[0]), int(self.end_point[1])),
                     (0, 255, 0),
                     2,
                 )
                 label = 1
                 self.editor.add_click(
                     [
-                        self.start_point.x(),
-                        self.start_point.y(),
-                        self.end_point.x(),
-                        self.end_point.y(),
+                        self.start_point[0],
+                        self.start_point[1],
+                        self.end_point[0],
+                        self.end_point[1],
                     ],
                     label,
                     selected_annotations,
                 )
             if self.editor.drawing_arrow and not self.editor.arrow_exist:
                 self.editor.arrow_exist = True
-                self.editor.arrow_pos[1] = event.pos()
-                temp_image = self.editor.display.copy()
-                cv2.arrowedLine(self.editor.display, (int(self.editor.arrow_pos[0].x()), int(self.editor.arrow_pos[0].y())), (int(self.editor.arrow_pos[1].x()), int(self.editor.arrow_pos[1].y())), (0, 255, 0), 2,
+                self.editor.arrow_pos[1] = get_pos(event, self.mapToScene, self.display_image)
+                cv2.arrowedLine(self.editor.display, (int(self.editor.arrow_pos[0][0]), int(self.editor.arrow_pos[0][1])), (int(self.editor.arrow_pos[1][0]), int(self.editor.arrow_pos[1][1])), (0, 255, 0), 2,
                                 tipLength=0.3)
-                # self.imshow(temp_image)
 
 
 class ApplicationInterface(QWidget):

@@ -26,3 +26,9 @@ def apply_coords(coords: np.ndarray, original_size: Tuple[int, ...]) -> np.ndarr
     coords[..., 0] = coords[..., 0] * (new_w / old_w)
     coords[..., 1] = coords[..., 1] * (new_h / old_h)
     return coords
+
+def get_pos(event, mapToScene, display_image):
+    pos = event.pos()
+    pos_in_item = mapToScene(pos) - display_image.pos()
+    x, y = pos_in_item.x(), pos_in_item.y()
+    return x, y
