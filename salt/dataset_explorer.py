@@ -110,7 +110,7 @@ def rot_bounding_box_from_mask(mask, arrow_pos):
 
     if arrow_pos[0] != None and arrow_pos[1] != None:
         accurate_angle_deg = calculate_angle(
-            (arrow_pos[0].x(), arrow_pos[0].y()), (arrow_pos[1].x(), arrow_pos[1].y())
+            (arrow_pos[0][0], arrow_pos[0][1]), (arrow_pos[1][0], arrow_pos[1][1])
         )
 
         all_contours = np.vstack(contours)
