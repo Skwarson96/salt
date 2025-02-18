@@ -8,10 +8,10 @@
 
 
 ### Box prompt
-![Box prompt](https://github.com/anuragxel/salt/raw/main/assets/box-prompt.gif)
+![Box prompt](https://github.com/Skwarson96/salt/blob/update-readme/assets/box-prompt.gif)
 
 ### Draw accurate angle rotation mark
-![Accurate rotated box](https://github.com/anuragxel/salt/raw/main/assets/accurate-angle.gif)
+![Accurate rotated box](https://github.com/Skwarson96/salt/blob/update-readme/assets/accurate-angle.gif)
 
 
 ------------------------------------------------------------
