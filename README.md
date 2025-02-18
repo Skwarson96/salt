@@ -2,8 +2,17 @@
 ## What I added
 1. Box prompt - you can use it by clicking the button: `Change prompt type`
 2. Adjust annotations.json file to cvat syntax requirements
-3. Add rotated box
-4. Drawing rotation mark point
+3. Add rotated box (coarse angle)
+4. Drawing rotation mark point, to activate type `b` key
+5. Add accurate rotated box (0-360deg)
+
+
+### Box prompt
+![Box prompt](https://github.com/Skwarson96/salt/blob/update-readme/assets/box-prompt.gif)
+
+### Draw accurate angle rotation mark
+![Accurate rotated box](https://github.com/Skwarson96/salt/blob/update-readme/assets/accurate-angle.gif)
+
 
 ------------------------------------------------------------
 ## Original README.md
