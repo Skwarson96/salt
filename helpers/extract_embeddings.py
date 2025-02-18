@@ -31,7 +31,7 @@ def main(checkpoint_path, model_type, device, images_folder, embeddings_folder):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint-path", type=str, default="./sam_vit_h_4b8939.pth")
-    parser.add_argument("--model_type", type=str, default="default")
+    parser.add_argument("--model-type", type=str, default="default")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--dataset-path", type=str, default="./example_dataset")
     args = parser.parse_args()
